@@ -75,14 +75,14 @@ interface PropsMappaSegnala {
 export default function MappaSegnalaLeaflet({ posizione, onClickMappa }: PropsMappaSegnala) {
   return (
     <div className="relative w-full h-64 rounded-lg overflow-hidden">
-      {/* Overlay HUD tattico scuro */}
-      <div className="absolute top-2 left-2 z-[1000] bg-black/70 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-mono text-emerald-400">
+      {/* Overlay GPS info */}
+      <div className="absolute top-2 left-2 z-[1000] bg-white/80 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-mono text-amber-700">
         <div className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
           <span>GPS TRACK</span>
         </div>
         {posizione && (
-          <div className="text-[9px] text-emerald-300/70 mt-0.5">
+          <div className="text-[9px] text-gray-500 mt-0.5">
             {posizione.lat.toFixed(4)}N {posizione.lng.toFixed(4)}E
           </div>
         )}
@@ -90,9 +90,9 @@ export default function MappaSegnalaLeaflet({ posizione, onClickMappa }: PropsMa
 
       {!posizione && (
         <div className="absolute inset-0 z-[999] flex items-center justify-center pointer-events-none">
-          <div className="bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg">
-            <div className="text-emerald-400 text-xs font-mono flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          <div className="bg-white/80 backdrop-blur-sm px-3 py-2 rounded-lg">
+            <div className="text-amber-700 text-xs font-mono flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               Clicca per posizionare il marker
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function MappaSegnalaLeaflet({ posizione, onClickMappa }: PropsMa
       >
         <TileLayer
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
         <GestoreClick posizione={posizione} onClickMappa={onClickMappa} />
       </MapContainer>

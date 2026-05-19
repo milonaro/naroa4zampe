@@ -7,8 +7,8 @@ import { db } from '@/lib/db';
 // Dati di esempio per le segnalazioni
 const datiDimostrativi = [
   {
-    titolo: 'Cane randagio vicino alla piazza centrale',
-    descrizione: 'Un cane di media taglia girovaga vicino alla Piazza Garibaldi da qualche giorno. Sembra docile ma ha bisogno di assistenza.',
+    titolo: 'Animale randagio vicino alla piazza centrale',
+    descrizione: 'Un animale di media taglia girovaga vicino alla Piazza Garibaldi da qualche giorno. Sembra docile ma ha bisogno di assistenza.',
     latitudine: 37.2974,
     longitudine: 13.7774,
     indirizzo: 'Piazza Garibaldi, Naro',
@@ -39,8 +39,9 @@ const datiDimostrativi = [
     telefonoSegnalatore: '3349876543',
   },
   {
-    titolo: 'Cane grande senza collare al parco',
-    descrizione: 'Un cane di grande taglia senza collare è stato avvistato nel parco comunale. Sembra in buone condizioni di salute.',
+    titolo: 'Animale grande senza collare al parco',
+    descrizione: 'Un animale di grande taglia senza collare è stato avvistato nel parco comunale. Sembra in buone condizioni di salute.',
+
     latitudine: 37.2984,
     longitudine: 13.7794,
     indirizzo: 'Parco Comunale, Naro',
@@ -54,8 +55,9 @@ const datiDimostrativi = [
     emailSegnalatore: 'giuseppe.verdi@email.it',
   },
   {
-    titolo: 'Cane ferito lungo la strada provinciale',
-    descrizione: 'Un cane sembra ferito a una zampa lungo la strada provinciale. Non si avvicina alle persone ma zoppica visibilmente.',
+    titolo: 'Animale ferito lungo la strada provinciale',
+    descrizione: 'Un animale sembra ferito a una zampa lungo la strada provinciale. Non si avvicina alle persone ma zoppica visibilmente.',
+
     latitudine: 37.2934,
     longitudine: 13.7734,
     indirizzo: 'Strada Provinciale 38, Naro',
@@ -70,8 +72,9 @@ const datiDimostrativi = [
     telefonoSegnalatore: '3355551234',
   },
   {
-    titolo: 'Cagnolino vicino al cimitero',
-    descrizione: 'Un piccolo cane è stato visto diverse volte nei pressi del cimitero. Sembra affamato ma amichevole.',
+    titolo: 'Piccolo animale vicino al cimitero',
+    descrizione: 'Un piccolo animale è stato visto diverse volte nei pressi del cimitero. Sembra affamato ma amichevole.',
+
     latitudine: 37.2994,
     longitudine: 13.7714,
     indirizzo: 'Via Cimitero, Naro',
@@ -85,8 +88,8 @@ const datiDimostrativi = [
     emailSegnalatore: 'carmela.gallo@email.it',
   },
   {
-    titolo: 'Due cani randagi al quartiere San Calogero',
-    descrizione: 'Due cani randagi girano per il quartiere San Calogero da circa una settimana. I residenti sono preoccupati.',
+    titolo: 'Due animali randagi al quartiere San Calogero',
+    descrizione: 'Due animali randagi girano per il quartiere San Calogero da circa una settimana. I residenti sono preoccupati.',
     latitudine: 37.2944,
     longitudine: 13.7784,
     indirizzo: 'Quartiere San Calogero, Naro',
@@ -101,8 +104,9 @@ const datiDimostrativi = [
     telefonoSegnalatore: '3371112233',
   },
   {
-    titolo: 'Cane con collare rosso vicino alla chiesa',
-    descrizione: 'Un cane con un collare rosso girovaga vicino alla Chiesa Madre. Probabilmente smarrito dal proprietario.',
+    titolo: 'Animale con collare rosso vicino alla chiesa',
+    descrizione: 'Un animale con un collare rosso girovaga vicino alla Chiesa Madre. Probabilmente smarrito dal proprietario.',
+
     latitudine: 37.2969,
     longitudine: 13.7769,
     indirizzo: 'Piazza Chiesa Madre, Naro',
@@ -116,8 +120,8 @@ const datiDimostrativi = [
     emailSegnalatore: 'maria.costa@email.it',
   },
   {
-    titolo: 'Cane randagio nella zona agricola',
-    descrizione: 'Un cane è stato avvistato ripetutamente nella zona agricola a est di Naro. Sembra in cerca di cibo.',
+    titolo: 'Animale randagio nella zona agricola',
+    descrizione: 'Un animale è stato avvistato ripetutamente nella zona agricola a est di Naro. Sembra in cerca di cibo.',
     latitudine: 37.2914,
     longitudine: 13.7814,
     indirizzo: 'Contrada Calogero, Naro',
@@ -131,8 +135,9 @@ const datiDimostrativi = [
     emailSegnalatore: 'vincenzo.russo@email.it',
   },
   {
-    titolo: 'Cane aggressivo vicino al mercato',
-    descrizione: 'Un cane di grande taglia mostra comportamento aggressivo vicino all\'area del mercato. Pericolo per i passanti.',
+    titolo: 'Animale aggressivo vicino al mercato',
+    descrizione: 'Un animale di grande taglia mostra comportamento aggressivo vicino all\'area del mercato. Pericolo per i passanti.',
+
     latitudine: 37.2960,
     longitudine: 13.7750,
     indirizzo: 'Via del Mercato, Naro',
@@ -147,8 +152,9 @@ const datiDimostrativi = [
     telefonoSegnalatore: '3389998877',
   },
   {
-    titolo: 'Cane magro vicino alla stazione dei bus',
-    descrizione: 'Un cane molto magro è stato visto vicino alla fermata dei bus. Sembra denutrito e ha bisogno di cure veterinarie.',
+    titolo: 'Animale magro vicino alla stazione dei bus',
+    descrizione: 'Un animale molto magro è stato visto vicino alla fermata dei bus. Sembra denutrito e ha bisogno di cure veterinarie.',
+
     latitudine: 37.2950,
     longitudine: 13.7740,
     indirizzo: 'Via Stazione, Naro',
@@ -162,8 +168,8 @@ const datiDimostrativi = [
     emailSegnalatore: 'roberto.conti@email.it',
   },
   {
-    titolo: 'Cane randagio nella via principale',
-    descrizione: 'Un cane è stato avvistato più volte nella via principale del centro storico. Sembra ben curato, probabilmente smarrito.',
+    titolo: 'Animale randagio nella via principale',
+    descrizione: 'Un animale è stato avvistato più volte nella via principale del centro storico. Sembra ben curato, probabilmente smarrito.',
     latitudine: 37.2968,
     longitudine: 13.7760,
     indirizzo: 'Corso Vittorio Emanuele, Naro',
@@ -193,8 +199,8 @@ const datiDimostrativi = [
     telefonoSegnalatore: '3405556677',
   },
   {
-    titolo: 'Cane randagio al camposanto vecchio',
-    descrizione: 'Un cane anziano girovaga vicino al camposanto vecchio. Sembra avere difficoltà a camminare.',
+    titolo: 'Animale randagio al camposanto vecchio',
+    descrizione: 'Un animale anziano girovaga vicino al camposanto vecchio. Sembra avere difficoltà a camminare.',
     latitudine: 37.2980,
     longitudine: 13.7720,
     indirizzo: 'Via Camposanto, Naro',
@@ -208,8 +214,9 @@ const datiDimostrativi = [
     emailSegnalatore: 'elena.moretti@email.it',
   },
   {
-    titolo: 'Cane vicino all\'area sportiva',
-    descrizione: 'Un cane di piccola taglia è stato visto più volte vicino all\'area sportiva comunale. I bambini sono spaventati.',
+    titolo: 'Animale vicino all\'area sportiva',
+    descrizione: 'Un animale di piccola taglia è stato visto più volte vicino all\'area sportiva comunale. I bambini sono spaventati.',
+
     latitudine: 37.2940,
     longitudine: 13.7770,
     indirizzo: 'Area Sportiva, Naro',
@@ -223,8 +230,9 @@ const datiDimostrativi = [
     emailSegnalatore: 'daniele.greco@email.it',
   },
   {
-    titolo: 'Cane idrofobo sospetto nel quartiere periferico',
-    descrizione: 'Un cane mostra segni di malessere e comportamento anomalo nel quartiere periferico. Potrebbe essere idrofobo.',
+    titolo: 'Animale idrofobo sospetto nel quartiere periferico',
+    descrizione: 'Un animale mostra segni di malessere e comportamento anomalo nel quartiere periferico. Potrebbe essere idrofobo.',
+
     latitudine: 37.2900,
     longitudine: 13.7700,
     indirizzo: 'Via Periferia, Naro',

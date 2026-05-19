@@ -1,5 +1,5 @@
 // Schema del database per l'applicazione Naro a 4 Zampe
-// Gestione segnalazioni di cani randagi nel comune di Naro
+// Gestione segnalazioni di animali randagi nel comune di Naro
 
 generator client {
   provider = "prisma-client-js"
@@ -23,7 +23,7 @@ model Utente {
   segnalazioni Segnalazione[]
 }
 
-// Segnalazione di cane randagio
+// Segnalazione di animale randagio
 model Segnalazione {
   id          String   @id @default(cuid())
   titolo      String
@@ -32,7 +32,7 @@ model Segnalazione {
   latitudine  Float
   longitudine Float
   indirizzo   String?
-  // Dettagli del cane
+  // Dettagli dell'animale
   razza       String?
   colore      String?
   taglia      String?   // "piccola", "media", "grande"

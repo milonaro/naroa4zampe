@@ -145,7 +145,7 @@ export default function HomeView() {
             Naro a 4 Zampe
           </h1>
           <p className="text-amber-100 text-base md:text-lg max-w-2xl mb-6 leading-relaxed">
-            Aiuta il Comune di Naro a monitorare e gestire la presenza di cani randagi sul territorio.
+            Aiuta il Comune di Naro a monitorare e gestire la presenza di animali randagi sul territorio.
             Ogni segnalazione è importante per la sicurezza dei cittadini e il benessere degli animali.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -241,7 +241,7 @@ export default function HomeView() {
               <div className="text-center py-10 text-amber-500">
                 <Dog className="h-14 w-14 mx-auto mb-3 opacity-40" />
                 <p className="font-medium">Nessuna segnalazione trovata</p>
-                <p className="text-sm text-amber-400 mt-1">Sii il primo a segnalare un cane randagio!</p>
+                <p className="text-sm text-amber-400 mt-1">Sii il primo a segnalare un animale randagio!</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
@@ -300,7 +300,7 @@ export default function HomeView() {
               <div>
                 <h3 className="text-lg font-bold text-amber-800 flex items-center gap-2">
                   <PawPrint className="h-5 w-5 text-amber-500" />
-                  Hai visto un cane randagio?
+                  Hai visto un animale randagio?
                 </h3>
                 <p className="text-amber-600 text-sm mt-1 max-w-md">
                   La tua segnalazione può fare la differenza. Aiutaci a proteggere cittadini e animali del nostro territorio.

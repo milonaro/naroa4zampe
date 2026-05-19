@@ -1,4 +1,4 @@
-// API per la gestione delle segnalazioni di cani randagi
+// API per la gestione delle segnalazioni di animali randagi
 // GET: elenco segnalazioni con filtri opzionali
 // POST: creazione di una nuova segnalazione
 
@@ -148,7 +148,30 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(segnalazione, { status: 201 });
+    // Ricerca segnalazioni simili (duplicati potenziali)
+    const RAGGIO_DUPLICATO_KM = 0.2; // 200 metri
+    const segnalazioniVicine = await db.segnalazione.findMany({
+      where: {
+        id: { not: segnalazione.id },
+        stato: { not: 'archiviata' },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    const segnalazioniSimili = segnalazioniVicine.filter(s => {
+      const dist = distanzaKm(datiValidati.latitudine, datiValidati.longitudine, s.latitudine, s.longitudine);
+      return dist <= RAGGIO_DUPLICATO_KM;
+    }).map(s => ({
+      id: s.id,
+      titolo: s.titolo,
+      urgenza: s.urgenza,
+      stato: s.stato,
+      distanza: distanzaKm(datiValidati.latitudine, datiValidati.longitudine, s.latitudine, s.longitudine),
+      createdAt: s.createdAt,
+    })).slice(0, 5);
+
+    return NextResponse.json({ ...segnalazione, segnalazioniSimili }, { status: 201 });
   } catch (errore) {
     if (errore instanceof z.ZodError) {
       return NextResponse.json(

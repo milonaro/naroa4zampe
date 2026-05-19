@@ -89,6 +89,11 @@ import {
   Loader2,
   ChevronRight,
   AlertOctagon,
+  Users,
+  Mail,
+  Phone,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
@@ -203,6 +208,21 @@ interface AreaOperativa {
   raggioKm: number;
 }
 
+// Interfaccia per i dati utente raggruppati
+interface UtenteDashboard {
+  nome: string;
+  cognome: string;
+  email: string;
+  telefono: string;
+  segnalazioni: {
+    id: string;
+    titolo: string;
+    urgenza: string;
+    stato: string;
+    createdAt: string;
+  }[];
+}
+
 // ─── Formula di Haversine ─────────────────────────────────────────────────────
 function distanzaKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -228,6 +248,9 @@ export default function DashboardView() {
   const [tabAttiva, setTabAttiva] = useState('panoramica');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [utentiSearch, setUtentiSearch] = useState('');
+  const [debouncedUtentiSearch, setDebouncedUtentiSearch] = useState('');
+  const [utenteEspanso, setUtenteEspanso] = useState<string | null>(null);
   const [fuoriZonaDialog, setFuoriZonaDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const [permessoNotifiche, setPermessoNotifiche] = useState<NotificationPermission | 'default'>(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -244,6 +267,13 @@ export default function DashboardView() {
     debounceTimerRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); };
   }, [searchQuery]);
+
+  // ─── Debounce utenti search ────────────────────────────────────────────
+  useEffect(() => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => setDebouncedUtentiSearch(utentiSearch), 300);
+    return () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); };
+  }, [utentiSearch]);
 
   // ─── Richiedi permesso notifiche ────────────────────────────────────────
   useEffect(() => {
@@ -302,6 +332,17 @@ export default function DashboardView() {
   const { data: areaOperativa } = useQuery<AreaOperativa>({
     queryKey: ['area-operativa'],
     queryFn: async () => { const r = await fetch('/api/segnalazioni/area-operativa'); return r.json(); },
+  });
+
+  // ─── Query: Utenti ──────────────────────────────────────────────────────
+  const { data: datiUtenti, isLoading: caricamentoUtenti } = useQuery<{ utenti: UtenteDashboard[] }>({
+    queryKey: ['utenti', debouncedUtentiSearch],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (debouncedUtentiSearch) params.set('search', debouncedUtentiSearch);
+      const r = await fetch(`/api/utenti?${params.toString()}`);
+      return r.json();
+    },
   });
 
   // ─── Query: Notifiche Urgenti (polling 15s) ─────────────────────────────
@@ -589,6 +630,13 @@ export default function DashboardView() {
                 {datiNotifiche.nonLette}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger
+            value="utenti"
+            className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 font-mono text-xs"
+          >
+            <Users className="h-3.5 w-3.5 mr-1.5" />
+            Utenti
           </TabsTrigger>
           <TabsTrigger
             value="inserimento"
@@ -901,6 +949,199 @@ export default function DashboardView() {
                       ))}
                     </TableBody>
                   </Table>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ═══════════ TAB UTENTI ═══════════ */}
+        <TabsContent value="utenti">
+          <Card className="bg-slate-900/80 border border-slate-700/50">
+            <CardHeader className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-cyan-500" />
+                    Utenti Segnalatori
+                  </CardTitle>
+                  <CardDescription className="text-slate-500 text-xs font-mono mt-1">
+                    Cittadini che hanno inviato segnalazioni, raggruppati per email
+                  </CardDescription>
+                </div>
+                <Badge className="bg-cyan-900/60 text-cyan-300 border border-cyan-700/50 text-[10px] font-mono self-start">
+                  {datiUtenti?.utenti?.length || 0} utenti
+                </Badge>
+              </div>
+              {/* ─── Barra di Ricerca Utenti ──────────────────────── */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Input
+                  placeholder="Cerca per nome, cognome o email..."
+                  value={utentiSearch}
+                  onChange={(e) => setUtentiSearch(e.target.value)}
+                  className="pl-9 pr-9 h-9 bg-slate-800/60 border-slate-700/50 text-cyan-100 placeholder:text-slate-600 font-mono text-xs focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                />
+                {utentiSearch && (
+                  <button
+                    onClick={() => { setUtentiSearch(''); setDebouncedUtentiSearch(''); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {caricamentoUtenti ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin h-8 w-8 border-4 border-cyan-500 border-t-transparent rounded-full" />
+                </div>
+              ) : !datiUtenti?.utenti || datiUtenti.utenti.length === 0 ? (
+                <div className="text-center py-12 text-slate-600">
+                  <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="font-mono text-sm">Nessun utente trovato</p>
+                </div>
+              ) : (
+                <ScrollArea className="max-h-[600px]">
+                  <div className="space-y-3">
+                    {datiUtenti.utenti.map((utente) => {
+                      const isEspanso = utenteEspanso === utente.email.toLowerCase();
+                      const ultimaSegnalazione = utente.segnalazioni[0];
+                      const perUrgenza: Record<string, number> = {};
+                      const perStato: Record<string, number> = {};
+                      utente.segnalazioni.forEach(s => {
+                        perUrgenza[s.urgenza] = (perUrgenza[s.urgenza] || 0) + 1;
+                        perStato[s.stato] = (perStato[s.stato] || 0) + 1;
+                      });
+                      return (
+                        <motion.div
+                          key={utente.email}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-slate-800/40 border border-slate-700/40 rounded-lg overflow-hidden hover:border-slate-600/50 transition-all"
+                        >
+                          {/* ─── Intestazione Utente ──────────────────── */}
+                          <div
+                            className="p-4 cursor-pointer flex items-center gap-4"
+                            onClick={() => setUtenteEspanso(isEspanso ? null : utente.email.toLowerCase())}
+                          >
+                            {/* Avatar */}
+                            <div className="h-10 w-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center flex-shrink-0">
+                              <span className="text-cyan-400 font-mono text-sm font-bold">
+                                {utente.nome.charAt(0)}{utente.cognome.charAt(0)}
+                              </span>
+                            </div>
+                            {/* Info principali */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-mono text-slate-200 font-medium">
+                                {utente.nome} {utente.cognome}
+                              </p>
+                              <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono mt-0.5">
+                                <span className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  {utente.email}
+                                </span>
+                                {utente.telefono && (
+                                  <span className="flex items-center gap-1">
+                                    <Phone className="h-3 w-3" />
+                                    {utente.telefono}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {/* Statistiche rapide */}
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <div className="text-right">
+                                <p className="text-lg font-bold font-mono text-cyan-400">{utente.segnalazioni.length}</p>
+                                <p className="text-[9px] text-slate-500 font-mono uppercase">Segnalazioni</p>
+                              </div>
+                              {ultimaSegnalazione && (
+                                <div className="text-right hidden sm:block">
+                                  <p className="text-[10px] text-slate-400 font-mono">
+                                    {new Date(ultimaSegnalazione.createdAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                                  </p>
+                                  <p className="text-[9px] text-slate-600 font-mono uppercase">Ultima</p>
+                                </div>
+                              )}
+                              {isEspanso ? (
+                                <ChevronUp className="h-4 w-4 text-slate-500" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-slate-500" />
+                              )}
+                            </div>
+                          </div>
+
+                          {/* ─── Dettagli Espansi ──────────────────────── */}
+                          <AnimatePresence>
+                            {isEspanso && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-4 pb-4 space-y-3 border-t border-slate-700/30 pt-3">
+                                  {/* Statistiche per urgenza e stato */}
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-slate-800/60 p-3 rounded-lg border border-slate-700/30">
+                                      <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider mb-2">Per Urgenza</p>
+                                      <div className="space-y-1">
+                                        {Object.entries(perUrgenza).map(([urg, count]) => (
+                                          <div key={urg} className="flex items-center justify-between">
+                                            <Badge className={`${coloriUrgenzaDark[urg]} text-[9px] font-mono`}>{etichetteUrgenza[urg]}</Badge>
+                                            <span className="text-xs font-mono text-slate-300">{count}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div className="bg-slate-800/60 p-3 rounded-lg border border-slate-700/30">
+                                      <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider mb-2">Per Stato</p>
+                                      <div className="space-y-1">
+                                        {Object.entries(perStato).map(([stato, count]) => (
+                                          <div key={stato} className="flex items-center justify-between">
+                                            <Badge className={`${coloriStatoDark[stato]} text-[9px] font-mono`}>{etichetteStato[stato]}</Badge>
+                                            <span className="text-xs font-mono text-slate-300">{count}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Elenco segnalazioni dell'utente */}
+                                  <div>
+                                    <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider mb-2">Elenco Segnalazioni</p>
+                                    <div className="space-y-1.5">
+                                      {utente.segnalazioni.map((seg) => (
+                                        <div
+                                          key={seg.id}
+                                          className="flex items-center justify-between p-2 rounded-md bg-slate-800/40 border border-slate-700/20 cursor-pointer hover:bg-slate-700/40 transition-colors"
+                                          onClick={() => selezionaSegnalazione(seg.id)}
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            <FileText className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                                            <span className="text-xs font-mono text-slate-300 truncate">{seg.titolo}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                            <Badge className={`${coloriUrgenzaDark[seg.urgenza]} text-[9px] font-mono`}>{etichetteUrgenza[seg.urgenza]}</Badge>
+                                            <Badge className={`${coloriStatoDark[seg.stato]} text-[9px] font-mono`}>{etichetteStato[seg.stato]}</Badge>
+                                            <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                                              {new Date(seg.createdAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
                 </ScrollArea>
               )}
             </CardContent>
@@ -1295,7 +1536,7 @@ function InserimentoManualeForm({
           <div className="space-y-1.5">
             <Label className={labelClass}>Titolo *</Label>
             <Input
-              placeholder="es. Cane randagio vicino alla piazza"
+              placeholder="es. Animale randagio vicino alla piazza"
               value={titolo}
               onChange={(e) => setTitolo(e.target.value)}
               className={inputClass}
@@ -1327,7 +1568,7 @@ function InserimentoManualeForm({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className={labelClass}>Razza</Label>
+              <Label className={labelClass}>Razza/Tipo</Label>
               <Input placeholder="Meticcio..." value={razza} onChange={(e) => setRazza(e.target.value)} className={inputClass} />
             </div>
             <div className="space-y-1.5">

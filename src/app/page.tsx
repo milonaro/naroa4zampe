@@ -94,7 +94,7 @@ function ContenutoPrincipale() {
             </span>
           </div>
           <p className="text-xs text-amber-400">
-            &copy; {new Date().getFullYear()} Comune di Naro &mdash; Servizio segnalazione cani randagi
+            &copy; {new Date().getFullYear()} Comune di Naro &mdash; Servizio segnalazione animali randagi
           </p>
         </div>
       </footer>

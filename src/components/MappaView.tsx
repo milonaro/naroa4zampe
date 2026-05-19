@@ -1,5 +1,5 @@
 // Vista Mappa - Tactical Recon HUD
-// Console di comando tattica per la localizzazione di cani randagi a Naro
+// Console di comando tattica per la localizzazione di animali randagi a Naro
 // Importazione dinamica per evitare errori SSR (window is not defined)
 
 'use client';
@@ -39,12 +39,12 @@ interface Segnalazione {
   createdAt: string;
 }
 
-// Colori urgenza neon
+// Colori urgenza (standard, leggibili su sfondo chiaro)
 const coloriUrgenza: Record<string, string> = {
-  bassa: '#00ff88',
-  media: '#ffcc00',
-  alta: '#ff8800',
-  critica: '#ff2255',
+  bassa: '#22c55e',
+  media: '#eab308',
+  alta: '#f97316',
+  critica: '#ef4444',
 };
 
 // Etichette urgenza
@@ -67,11 +67,11 @@ const etichetteStato: Record<string, string> = {
 const MappaLeaflet = dynamic(() => import('./MappaLeaflet'), {
   ssr: false,
   loading: () => (
-    <div className="h-[400px] md:h-[500px] lg:h-[600px] flex items-center justify-center rounded-lg" style={{ background: '#0a0a14' }}>
+    <div className="h-[400px] md:h-[500px] lg:h-[600px] flex items-center justify-center rounded-lg bg-gray-50">
       <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" style={{ color: 'rgba(0,255,200,0.7)' }} />
-        <p className="text-sm" style={{ color: 'rgba(0,255,200,0.5)', fontFamily: "'Courier New', monospace" }}>
-          INIZIALIZZAZIONE SISTEMA TATTICO...
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-amber-600" />
+        <p className="text-sm text-gray-500 font-mono">
+          Caricamento mappa...
         </p>
       </div>
     </div>
@@ -176,17 +176,17 @@ export default function MappaView() {
   const contattiAlti = segnalazioni.filter(s => s.urgenza === 'alta').length;
 
   return (
-    <div className="space-y-0 pb-0" style={{ background: '#070a10', minHeight: 'calc(100vh - 160px)' }}>
-      {/* Intestazione tattica */}
+    <div className="space-y-0 pb-0 bg-gray-50" style={{ minHeight: 'calc(100vh - 160px)' }}>
+      {/* Intestazione */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-1">
-          <Crosshair className="h-5 w-5" style={{ color: 'rgba(0,255,200,0.8)' }} />
-          <h2 className="text-xl font-bold tracking-wider" style={{ color: 'rgba(0,255,200,0.9)', fontFamily: "'Courier New', monospace" }}>
-            MAPPA TATTICA
+          <Crosshair className="h-5 w-5 text-amber-600" />
+          <h2 className="text-xl font-bold tracking-wider text-gray-800">
+            Mappa Interattiva
           </h2>
         </div>
-        <p className="text-sm" style={{ color: 'rgba(0,255,200,0.5)', fontFamily: "'Courier New', monospace" }}>
-          Console di ricognizione — Cani randagi sul territorio di Naro
+        <p className="text-sm text-gray-500">
+          Segnalazioni di cani randagi sul territorio di Naro
         </p>
       </div>
 
@@ -195,18 +195,13 @@ export default function MappaView() {
         <div className="lg:col-span-1 space-y-3">
           {/* Sistema e Audio */}
           <div
-            className="rounded-lg p-3"
-            style={{
-              background: 'rgba(0,10,20,0.85)',
-              border: '1px solid rgba(0,255,200,0.25)',
-            }}
+            className="rounded-lg p-3 bg-white border border-gray-200"
           >
             <div className="flex items-center justify-between mb-3">
               <div
-                className="text-[10px] tracking-[0.2em] font-bold"
-                style={{ color: 'rgba(0,255,200,0.7)', fontFamily: "'Courier New', monospace" }}
+                className="text-[10px] tracking-[0.2em] font-bold text-amber-700"
               >
-                SISTEMA TATTICO
+                FILTRI E CONTROLLI
               </div>
               <button
                 onClick={toggleAudio}
@@ -223,15 +218,15 @@ export default function MappaView() {
             {/* Filtri */}
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 mb-1.5">
-                <Filter className="h-3 w-3" style={{ color: 'rgba(0,255,200,0.6)' }} />
-                <span className="text-[10px] tracking-wider" style={{ color: 'rgba(0,255,200,0.6)', fontFamily: "'Courier New', monospace" }}>
+                <Filter className="h-3 w-3 text-gray-500" />
+                <span className="text-[10px] tracking-wider text-gray-500 font-mono">
                   FILTRI
                 </span>
               </div>
 
               {/* Filtro stato */}
               <div>
-                <label className="text-[9px] tracking-wider mb-0.5 block" style={{ color: 'rgba(0,255,200,0.4)', fontFamily: "'Courier New', monospace" }}>
+                <label className="text-[9px] tracking-wider mb-0.5 block text-gray-500 font-mono">
                   STATO
                 </label>
                 <Select
@@ -241,22 +236,12 @@ export default function MappaView() {
                   }
                 >
                   <SelectTrigger
-                    className="h-7 text-[10px]"
-                    style={{
-                      background: 'rgba(0,10,20,0.8)',
-                      borderColor: 'rgba(0,255,200,0.3)',
-                      color: 'rgba(0,255,200,0.8)',
-                      fontFamily: "'Courier New', monospace",
-                    }}
+                    className="h-7 text-[10px] bg-white border-gray-200 text-gray-700"
                   >
                     <SelectValue placeholder="Tutti" />
                   </SelectTrigger>
                   <SelectContent
-                    style={{
-                      background: 'rgba(0,10,20,0.95)',
-                      borderColor: 'rgba(0,255,200,0.3)',
-                      fontFamily: "'Courier New', monospace",
-                    }}
+                    className="bg-white border-gray-200"
                   >
                     <SelectItem value="tutti">Tutti gli stati</SelectItem>
                     <SelectItem value="ricevuta">Ricevuta</SelectItem>
@@ -269,7 +254,7 @@ export default function MappaView() {
 
               {/* Filtro urgenza */}
               <div>
-                <label className="text-[9px] tracking-wider mb-0.5 block" style={{ color: 'rgba(0,255,200,0.4)', fontFamily: "'Courier New', monospace" }}>
+                <label className="text-[9px] tracking-wider mb-0.5 block text-gray-500 font-mono">
                   URGENZA
                 </label>
                 <Select
@@ -279,22 +264,12 @@ export default function MappaView() {
                   }
                 >
                   <SelectTrigger
-                    className="h-7 text-[10px]"
-                    style={{
-                      background: 'rgba(0,10,20,0.8)',
-                      borderColor: 'rgba(0,255,200,0.3)',
-                      color: 'rgba(0,255,200,0.8)',
-                      fontFamily: "'Courier New', monospace",
-                    }}
+                    className="h-7 text-[10px] bg-white border-gray-200 text-gray-700"
                   >
                     <SelectValue placeholder="Tutte" />
                   </SelectTrigger>
                   <SelectContent
-                    style={{
-                      background: 'rgba(0,10,20,0.95)',
-                      borderColor: 'rgba(0,255,200,0.3)',
-                      fontFamily: "'Courier New', monospace",
-                    }}
+                    className="bg-white border-gray-200"
                   >
                     <SelectItem value="tutte">Tutte le urgenze</SelectItem>
                     <SelectItem value="bassa">Bassa</SelectItem>
@@ -314,47 +289,39 @@ export default function MappaView() {
             </div>
           </div>
 
-          {/* Lista contatti radar */}
+          {/* Lista segnalazioni */}
           <div
-            className="rounded-lg overflow-hidden"
-            style={{
-              background: 'rgba(0,10,20,0.85)',
-              border: '1px solid rgba(0,255,200,0.25)',
-            }}
+            className="rounded-lg overflow-hidden bg-white border border-gray-200"
           >
             {/* Header lista */}
             <div
-              className="px-3 py-2 flex items-center justify-between"
-              style={{ borderBottom: '1px solid rgba(0,255,200,0.15)' }}
+              className="px-3 py-2 flex items-center justify-between border-b border-gray-100"
             >
               <div className="flex items-center gap-1.5">
-                <Radio className="h-3.5 w-3.5" style={{ color: 'rgba(0,255,200,0.7)' }} />
+                <Radio className="h-3.5 w-3.5 text-amber-600" />
                 <span
-                  className="text-[10px] tracking-[0.15em] font-bold"
-                  style={{ color: 'rgba(0,255,200,0.8)', fontFamily: "'Courier New', monospace" }}
+                  className="text-[10px] tracking-[0.15em] font-bold text-amber-700"
                 >
-                  CONTATTI RADAR
+                  SEGNALAZIONI
                 </span>
               </div>
               <span
-                className="text-[10px]"
-                style={{ color: 'rgba(0,255,200,0.5)', fontFamily: "'Courier New', monospace" }}
+                className="text-[10px] text-gray-400 font-mono"
               >
-                {segnalazioni.length} TGT
+                {segnalazioni.length} contatti
               </span>
             </div>
 
             {/* Statistiche rapide */}
             {segnalazioni.length > 0 && (
               <div
-                className="px-3 py-1.5 flex gap-3"
-                style={{ borderBottom: '1px solid rgba(0,255,200,0.1)' }}
+                className="px-3 py-1.5 flex gap-3 border-b border-gray-100"
               >
-                <span className="text-[9px]" style={{ color: '#ff2255', fontFamily: "'Courier New', monospace" }}>
-                  ⚠ {contattiCritici} CRIT
+                <span className="text-[9px] font-mono" style={{ color: '#ef4444' }}>
+                  ⚠ {contattiCritici} critici
                 </span>
-                <span className="text-[9px]" style={{ color: '#ff8800', fontFamily: "'Courier New', monospace" }}>
-                  ▲ {contattiAlti} ALT
+                <span className="text-[9px] font-mono" style={{ color: '#f97316' }}>
+                  ▲ {contattiAlti} alti
                 </span>
               </div>
             )}
@@ -362,14 +329,13 @@ export default function MappaView() {
             <ScrollArea className="h-[260px] lg:h-[360px]">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'rgba(0,255,200,0.6)' }} />
+                  <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
                 </div>
               ) : segnalazioni.length === 0 ? (
                 <div
-                  className="text-center py-8 text-sm"
-                  style={{ color: 'rgba(0,255,200,0.4)', fontFamily: "'Courier New', monospace" }}
+                  className="text-center py-8 text-sm text-gray-400"
                 >
-                  NESSUN CONTATTO RILEVATO
+                  Nessuna segnalazione trovata
                 </div>
               ) : (
                 <div className="p-1.5 space-y-1">
@@ -395,8 +361,7 @@ export default function MappaView() {
                           <div
                             className={`h-2.5 w-2.5 rounded-full punto-lampeggiante`}
                             style={{
-                              backgroundColor: coloriUrgenza[seg.urgenza] || '#ffcc00',
-                              boxShadow: `0 0 6px ${coloriUrgenza[seg.urgenza] || '#ffcc00'}88`,
+                              backgroundColor: coloriUrgenza[seg.urgenza] || '#eab308',
                             }}
                           />
                         </div>
@@ -404,21 +369,19 @@ export default function MappaView() {
                           {/* ID Tattico */}
                           <div className="flex items-center justify-between mb-0.5">
                             <span
-                              className="text-[10px] font-bold tracking-wider"
+                              className="text-[10px] font-bold tracking-wider font-mono"
                               style={{
-                                color: coloriUrgenza[seg.urgenza] || 'rgba(0,255,200,0.8)',
-                                fontFamily: "'Courier New', monospace",
+                                color: coloriUrgenza[seg.urgenza] || '#eab308',
                               }}
                             >
                               TGT-{seg.id.slice(0, 5).toUpperCase()}
                             </span>
                             <span
-                              className="text-[8px] px-1 py-0 rounded"
+                              className="text-[8px] px-1 py-0 rounded font-mono"
                               style={{
                                 backgroundColor: coloriUrgenza[seg.urgenza] + '22',
                                 color: coloriUrgenza[seg.urgenza],
                                 border: `1px solid ${coloriUrgenza[seg.urgenza]}44`,
-                                fontFamily: "'Courier New', monospace",
                               }}
                             >
                               {etichetteUrgenza[seg.urgenza]}
@@ -426,27 +389,24 @@ export default function MappaView() {
                           </div>
                           {/* Titolo */}
                           <p
-                            className="text-[11px] truncate mb-0.5"
-                            style={{ color: 'rgba(0,255,200,0.75)', fontFamily: "'Courier New', monospace" }}
+                            className="text-[11px] truncate mb-0.5 text-gray-700"
                           >
                             {seg.titolo}
                           </p>
                           {/* Coordinate */}
                           <p
-                            className="text-[9px]"
-                            style={{ color: 'rgba(0,255,200,0.4)', fontFamily: "'Courier New', monospace" }}
+                            className="text-[9px] text-gray-400 font-mono"
                           >
                             {seg.latitudine.toFixed(4)}N {seg.longitudine.toFixed(4)}E
                           </p>
                           {/* Stato */}
                           <div className="mt-0.5">
                             <span
-                              className="text-[8px] px-1 py-0 rounded"
+                              className="text-[8px] px-1 py-0 rounded font-mono"
                               style={{
-                                backgroundColor: 'rgba(0,255,200,0.08)',
-                                color: 'rgba(0,255,200,0.5)',
-                                border: '1px solid rgba(0,255,200,0.15)',
-                                fontFamily: "'Courier New', monospace",
+                                backgroundColor: 'rgba(100,100,100,0.08)',
+                                color: '#666',
+                                border: '1px solid rgba(100,100,100,0.15)',
                               }}
                             >
                               {etichetteStato[seg.stato] || seg.stato}
@@ -461,17 +421,12 @@ export default function MappaView() {
             </ScrollArea>
           </div>
 
-          {/* Legenda tattica */}
+          {/* Legenda urgenza */}
           <div
-            className="rounded-lg p-3"
-            style={{
-              background: 'rgba(0,10,20,0.85)',
-              border: '1px solid rgba(0,255,200,0.25)',
-            }}
+            className="rounded-lg p-3 bg-white border border-gray-200"
           >
             <div
-              className="text-[10px] tracking-[0.15em] font-bold mb-2"
-              style={{ color: 'rgba(0,255,200,0.6)', fontFamily: "'Courier New', monospace" }}
+              className="text-[10px] tracking-[0.15em] font-bold mb-2 text-amber-700"
             >
               LEGENDA URGENZA
             </div>
@@ -480,11 +435,11 @@ export default function MappaView() {
                 <div key={chiave} className="flex items-center gap-2">
                   <div
                     className="h-2 w-2 rounded-full punto-lampeggiante"
-                    style={{ backgroundColor: colore, boxShadow: `0 0 4px ${colore}88` }}
+                    style={{ backgroundColor: colore }}
                   />
                   <span
                     className="text-[10px]"
-                    style={{ color: colore, fontFamily: "'Courier New', monospace" }}
+                    style={{ color: colore }}
                   >
                     {etichetteUrgenza[chiave] || chiave}
                   </span>
@@ -497,11 +452,7 @@ export default function MappaView() {
         {/* Area Mappa Tattica */}
         <div className="lg:col-span-3">
           <div
-            className="rounded-lg overflow-hidden"
-            style={{
-              border: '1px solid rgba(0,255,200,0.25)',
-              boxShadow: '0 0 20px rgba(0,255,200,0.05)',
-            }}
+            className="rounded-lg overflow-hidden border border-gray-200 shadow-sm"
           >
             <MappaLeaflet
               segnalazioni={segnalazioni}
