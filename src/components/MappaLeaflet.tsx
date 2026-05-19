@@ -9,6 +9,14 @@ import L from 'leaflet';
 import { Badge } from '@/components/ui/badge';
 import { MapPin } from 'lucide-react';
 
+// Caricamento dinamico del CSS di Leaflet
+if (typeof window !== 'undefined') {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+  document.head.appendChild(link);
+}
+
 // Coordinate di Naro, Sicilia
 const NARO_LAT = 37.2964;
 const NARO_LNG = 13.7764;
