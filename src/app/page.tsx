@@ -1,5 +1,6 @@
-// Pagina principale dell'applicazione CaneRandagio Naro
+// Pagina principale dell'applicazione Naro a 4 Zampe
 // Gestisce la navigazione tra le diverse viste tramite Zustand store
+// Migliorato con sfondo pattern, footer professionale e transizioni fluide
 
 'use client';
 
@@ -15,6 +16,7 @@ import MappaView from '@/components/MappaView';
 import DashboardView from '@/components/DashboardView';
 import LoginView from '@/components/LoginView';
 import DettaglioSegnalazione from '@/components/DettaglioSegnalazione';
+import { PawPrint } from 'lucide-react';
 
 // Componente provider per React Query
 function ProviderQuery({ children }: { children: React.ReactNode }) {
@@ -63,8 +65,11 @@ function ContenutoPrincipale() {
     }
   };
 
+  // Determina se la vista corrente è scura (mappa, dashboard, login)
+  const vistaScura = vistaAttuale === 'mappa' || (vistaAttuale === 'dashboard' && adminAutenticato);
+
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-amber-50/50 to-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-amber-50/50 to-white pattern-griglia">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-6">
         <AnimatePresence mode="wait">
@@ -74,15 +79,23 @@ function ContenutoPrincipale() {
             initial="iniziale"
             animate="finale"
             exit="uscita"
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
             {renderVista()}
           </motion.div>
         </AnimatePresence>
       </main>
-      <footer className="border-t bg-white/80 backdrop-blur-sm py-4">
-        <div className="container mx-auto px-4 text-center text-sm text-amber-500">
-          &copy; {new Date().getFullYear()} Comune di Naro &mdash; CaneRandagio &mdash; Servizio segnalazione cani randagi
+      <footer className="border-t border-amber-100/60 bg-white/80 backdrop-blur-sm py-4">
+        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-amber-400">
+            <PawPrint className="h-4 w-4" />
+            <span className="text-sm font-medium text-amber-600">
+              Naro a 4 Zampe
+            </span>
+          </div>
+          <p className="text-xs text-amber-400">
+            &copy; {new Date().getFullYear()} Comune di Naro &mdash; Servizio segnalazione cani randagi
+          </p>
         </div>
       </footer>
       <DettaglioSegnalazione />

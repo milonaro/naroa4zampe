@@ -25,13 +25,14 @@ interface StoreApplicazione {
   // Autenticazione admin
   adminAutenticato: boolean;
   adminNome: string | null;
+  adminUsername: string | null;
 
   // Azioni
   impostaVista: (vista: Vista) => void;
   selezionaSegnalazione: (id: string | null) => void;
   impostaFiltri: (filtri: Partial<Filtri>) => void;
   impostaMenuMobile: (aperto: boolean) => void;
-  loginAdmin: (nome: string) => void;
+  loginAdmin: (nome: string, username?: string) => void;
   logoutAdmin: () => void;
 }
 
@@ -46,6 +47,7 @@ export const useStore = create<StoreApplicazione>((set) => ({
   menuMobileAperto: false,
   adminAutenticato: false,
   adminNome: null,
+  adminUsername: null,
 
   impostaVista: (vista) => set({ vistaAttuale: vista, menuMobileAperto: false }),
   selezionaSegnalazione: (id) => set({ segnalazioneSelezionata: id }),
@@ -54,6 +56,6 @@ export const useStore = create<StoreApplicazione>((set) => ({
       filtri: { ...stato.filtri, ...nuoviFiltri },
     })),
   impostaMenuMobile: (aperto) => set({ menuMobileAperto: aperto }),
-  loginAdmin: (nome) => set({ adminAutenticato: true, adminNome: nome }),
-  logoutAdmin: () => set({ adminAutenticato: false, adminNome: null, vistaAttuale: 'home' }),
+  loginAdmin: (nome, username) => set({ adminAutenticato: true, adminNome: nome, adminUsername: username || null }),
+  logoutAdmin: () => set({ adminAutenticato: false, adminNome: null, adminUsername: null, vistaAttuale: 'home' }),
 }));

@@ -1,18 +1,21 @@
 // Vista Segnala - Form per l'invio di una nuova segnalazione di cane randagio
+// Include consensi GDPR obbligatori e mappa Leaflet interattiva
 
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -20,11 +23,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { MapPin, Upload, Loader2, Send, Dog, X } from 'lucide-react';
+import { MapPin, Upload, Loader2, Send, Dog, X, Shield, Lock } from 'lucide-react';
 
 // Coordinate di Naro, Sicilia
 const NARO_LAT = 37.2964;
 const NARO_LNG = 13.7764;
+
+// Importazione dinamica del componente mappa Leaflet per il form
+const MappaSegnalaLeaflet = dynamic(() => import('./MappaSegnalaLeaflet'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 flex items-center justify-center bg-gray-900 rounded-lg">
+      <div className="text-center">
+        <Loader2 className="h-6 w-6 animate-spin text-emerald-400 mx-auto mb-2" />
+        <p className="text-emerald-400/70 text-xs font-mono">Caricamento mappa...</p>
+      </div>
+    </div>
+  ),
+});
 
 // Schema di validazione con Zod
 const segnalazioneSchema = z.object({
@@ -40,7 +56,9 @@ const segnalazioneSchema = z.object({
   nomeSegnalatore: z.string().min(2, 'Il nome deve avere almeno 2 caratteri'),
   cognomeSegnalatore: z.string().min(2, 'Il cognome deve avere almeno 2 caratteri'),
   emailSegnalatore: z.string().email('Inserisci un indirizzo email valido'),
-  telefonoSegnalatore: z.string().optional(),
+  telefonoSegnalatore: z.string().min(1, 'Il telefono è obbligatorio'),
+  consensoPrivacy: z.literal(true, { errorMap: () => ({ message: 'Devi accettare l\'informativa sulla privacy' }) }),
+  consensoDichiarazione: z.literal(true, { errorMap: () => ({ message: 'Devi accettare la dichiarazione di responsabilità' }) }),
 });
 
 type DatiSegnalazione = z.infer<typeof segnalazioneSchema>;
@@ -57,6 +75,7 @@ export default function SegnalaView() {
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors },
     reset,
   } = useForm<DatiSegnalazione>({
@@ -65,6 +84,8 @@ export default function SegnalaView() {
       urgenza: 'media',
       latitudine: 0,
       longitudine: 0,
+      consensoPrivacy: false as unknown as true,
+      consensoDichiarazione: false as unknown as true,
     },
   });
 
@@ -72,7 +93,7 @@ export default function SegnalaView() {
 
   // Mutazione per creare una segnalazione
   const creaSegnalazione = useMutation({
-    mutationFn: async (dati: DatiSegnalazione & { fotoUrl?: string }) => {
+    mutationFn: async (dati: DatiSegnalazione & { fotoUrl?: string; dataConsenso?: string }) => {
       const risposta = await fetch('/api/segnalazioni', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,17 +123,9 @@ export default function SegnalaView() {
     },
   });
 
-  // Gestione click sulla mappa semplificata
+  // Gestione click sulla mappa Leaflet
   const gestisciClickMappa = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const rettangolo = e.currentTarget.getBoundingClientRect();
-      const x = (e.clientX - rettangolo.left) / rettangolo.width;
-      const y = (e.clientY - rettangolo.top) / rettangolo.height;
-
-      // Calcolo coordinate approssimativo basato sull'area di Naro
-      const lat = NARO_LAT + (0.5 - y) * 0.02;
-      const lng = NARO_LNG + (x - 0.5) * 0.02;
-
+    (lat: number, lng: number) => {
       setPosizioneMappa({ lat, lng });
       setValue('latitudine', lat, { shouldValidate: true });
       setValue('longitudine', lng, { shouldValidate: true });
@@ -147,16 +160,9 @@ export default function SegnalaView() {
     const datiCompleti = {
       ...dati,
       fotoUrl: fotoBase64 || undefined,
+      dataConsenso: new Date().toISOString(),
     };
     creaSegnalazione.mutate(datiCompleti);
-  };
-
-  // Colori urgenza
-  const coloriUrgenza: Record<string, string> = {
-    bassa: 'bg-green-500',
-    media: 'bg-yellow-500',
-    alta: 'bg-orange-500',
-    critica: 'bg-red-500',
   };
 
   return (
@@ -182,60 +188,20 @@ export default function SegnalaView() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Mappa semplificata */}
-            <div
-              className="relative w-full h-48 md:h-64 bg-amber-50 border-2 border-dashed border-amber-300 rounded-lg cursor-crosshair overflow-hidden"
-              onClick={gestisciClickMappa}
-            >
-              {/* Sfondo mappa stilizzato */}
-              <div className="absolute inset-0 bg-gradient-to-b from-green-100 via-amber-50 to-amber-100">
-                {/* Vie stilizzate */}
-                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-amber-200" />
-                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-amber-200" />
-                <div className="absolute top-1/4 left-0 right-0 h-0.5 bg-amber-100" />
-                <div className="absolute top-3/4 left-0 right-0 h-0.5 bg-amber-100" />
-
-                {/* Etichetta città */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-400 text-sm font-medium">
-                  Naro
-                </div>
-              </div>
-
-              {/* Indicatore posizione */}
-              {posizioneMappa && (
-                <div
-                  className="absolute -translate-x-1/2 -translate-y-full z-10"
-                  style={{
-                    left: `${((posizioneMappa.lng - NARO_LNG + 0.01) / 0.02) * 100}%`,
-                    top: `${((NARO_LAT - posizioneMappa.lat + 0.01) / 0.02) * 100}%`,
-                  }}
-                >
-                  <div className="flex flex-col items-center">
-                    <MapPin className="h-8 w-8 text-red-500 fill-red-500 drop-shadow-md" />
-                    <div className="h-1 w-1 bg-red-500 rounded-full mt-0.5" />
-                  </div>
-                </div>
-              )}
-
-              {/* Istruzioni se nessuna posizione selezionata */}
-              {!posizioneMappa && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-white/80 px-4 py-2 rounded-lg text-amber-700 text-sm">
-                    <MapPin className="inline h-4 w-4 mr-1" />
-                    Clicca per posizionare il marker
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Mappa Leaflet */}
+            <MappaSegnalaLeaflet
+              posizione={posizioneMappa}
+              onClickMappa={gestisciClickMappa}
+            />
 
             {/* Coordinate visualizzate */}
             {posizioneMappa && (
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-amber-700">
-                  Lat: <strong>{posizioneMappa.lat.toFixed(4)}</strong>
+              <div className="flex items-center gap-4 text-sm bg-gray-900 px-3 py-2 rounded-lg">
+                <span className="text-emerald-400 font-mono text-xs">
+                  LAT: <strong>{posizioneMappa.lat.toFixed(4)}</strong>
                 </span>
-                <span className="text-amber-700">
-                  Lng: <strong>{posizioneMappa.lng.toFixed(4)}</strong>
+                <span className="text-emerald-400 font-mono text-xs">
+                  LNG: <strong>{posizioneMappa.lng.toFixed(4)}</strong>
                 </span>
               </div>
             )}
@@ -470,17 +436,100 @@ export default function SegnalaView() {
                 )}
               </div>
 
-              {/* Telefono */}
+              {/* Telefono - ORA OBBLIGATORIO */}
               <div className="space-y-2">
-                <Label htmlFor="telefonoSegnalatore" className="text-amber-700">Telefono (opzionale)</Label>
+                <Label htmlFor="telefonoSegnalatore" className="text-amber-700">Telefono *</Label>
                 <Input
                   id="telefonoSegnalatore"
                   placeholder="333 1234567"
-                  className="border-amber-200 focus:border-amber-500"
+                  className={`border-amber-200 focus:border-amber-500 ${errors.telefonoSegnalatore ? 'border-red-500' : ''}`}
                   {...register('telefonoSegnalatore')}
                 />
+                {errors.telefonoSegnalatore && (
+                  <p className="text-sm text-red-500">{errors.telefonoSegnalatore.message}</p>
+                )}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Sezione Informativa Privacy GDPR */}
+        <Card className="border-l-4 border-l-red-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2 text-red-800">
+              <Shield className="h-5 w-5 text-red-600" />
+              Informativa sulla Privacy e Trattamento dei Dati *
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-gray-600 leading-relaxed bg-red-50/50 p-3 rounded-lg border border-red-100">
+              Ai sensi del Regolamento (UE) 2016/679 (GDPR), acconsento al trattamento dei miei dati personali per le finalità di gestione delle segnalazioni di cani randagi nel territorio del Comune di Naro. I dati saranno trattati nel rispetto della normativa vigente e non saranno comunicati a terzi senza il mio consenso.
+            </p>
+            <div className="flex items-start gap-3">
+              <Controller
+                name="consensoPrivacy"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="consensoPrivacy"
+                    checked={field.value as boolean}
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked);
+                    }}
+                    className="mt-0.5 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+                  />
+                )}
+              />
+              <Label htmlFor="consensoPrivacy" className="text-sm text-gray-700 cursor-pointer leading-snug">
+                Ho letto e accetto l&apos;informativa sulla privacy *
+              </Label>
+            </div>
+            {errors.consensoPrivacy && (
+              <p className="text-sm text-red-500 flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                {errors.consensoPrivacy.message}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Sezione Dichiarazione di Responsabilità */}
+        <Card className="border-l-4 border-l-sky-600">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2 text-sky-800">
+              <Lock className="h-5 w-5 text-sky-600" />
+              Dichiarazione di Responsabilità *
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-gray-600 leading-relaxed bg-sky-50/50 p-3 rounded-lg border border-sky-100">
+              Consapevole delle sanzioni penali previste dall&apos;art. 76 del D.P.R. 445/2000 per le ipotesi di falsità in atti e dichiarazioni mendaci, dichiaro che le informazioni fornite nella presente segnalazione corrispondono a verità. Dichiaro inoltre di essere consapevole che la presentazione di segnalazioni falsamente rappresentate o dolosamente mendaci potrà comportare l&apos;adozione di provvedimenti da parte dell&apos;Autorità competente.
+            </p>
+            <div className="flex items-start gap-3">
+              <Controller
+                name="consensoDichiarazione"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="consensoDichiarazione"
+                    checked={field.value as boolean}
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked);
+                    }}
+                    className="mt-0.5 data-[state=checked]:bg-sky-600 data-[state=checked]:border-sky-600"
+                  />
+                )}
+              />
+              <Label htmlFor="consensoDichiarazione" className="text-sm text-gray-700 cursor-pointer leading-snug">
+                Ho letto e accetto la dichiarazione di responsabilità *
+              </Label>
+            </div>
+            {errors.consensoDichiarazione && (
+              <p className="text-sm text-red-500 flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                {errors.consensoDichiarazione.message}
+              </p>
+            )}
           </CardContent>
         </Card>
 

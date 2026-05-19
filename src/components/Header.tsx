@@ -1,5 +1,6 @@
 // Componente Header con navigazione principale
 // Include logo, pulsanti di navigazione, campanella notifiche, login/logout e menu mobile
+// Migliorato con glow tab attivo, pulse notifica e menu mobile scuro
 
 'use client';
 
@@ -57,11 +58,7 @@ export default function Header() {
 
   // Gestione click su Dashboard
   const gestisciClickDashboard = () => {
-    if (!adminAutenticato) {
-      impostaVista('dashboard');
-    } else {
-      impostaVista('dashboard');
-    }
+    impostaVista('dashboard');
   };
 
   // Gestione logout
@@ -71,19 +68,19 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-amber-100/50 bg-white/90 backdrop-blur-lg supports-[backdrop-filter]:bg-white/75 shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo e titolo */}
         <button
           onClick={() => impostaVista('home')}
           className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
         >
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/20">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/30 glow-sottile transition-all duration-300">
             <Dog className="h-5 w-5" />
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-bold text-amber-800 leading-tight tracking-tight">
-              CaneRandagio
+              Naro a 4 Zampe
             </span>
             <span className="text-[11px] text-amber-500 font-medium leading-tight">
               Comune di Naro
@@ -93,25 +90,28 @@ export default function Header() {
 
         {/* Navigazione desktop */}
         <nav className="hidden md:flex items-center gap-1">
-          {visteNavigazione.map((vista) => (
-            <Button
-              key={vista.id}
-              variant={vistaAttuale === vista.id ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => vista.id === 'dashboard' ? gestisciClickDashboard() : impostaVista(vista.id)}
-              className={
-                vistaAttuale === vista.id
-                  ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm'
-                  : 'text-amber-700 hover:text-amber-900 hover:bg-amber-50'
-              }
-            >
-              {vista.icona}
-              <span className="ml-1.5">{vista.etichetta}</span>
-              {vista.richiedeAuth && !adminAutenticato && (
-                <LogIn className="ml-1 h-3 w-3 opacity-60" />
-              )}
-            </Button>
-          ))}
+          {visteNavigazione.map((vista) => {
+            const attivo = vistaAttuale === vista.id;
+            return (
+              <Button
+                key={vista.id}
+                variant={attivo ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => vista.id === 'dashboard' ? gestisciClickDashboard() : impostaVista(vista.id)}
+                className={`relative transition-all duration-200 ${
+                  attivo
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm tab-attivo-glow'
+                    : 'text-amber-700 hover:text-amber-900 hover:bg-amber-50'
+                }`}
+              >
+                {vista.icona}
+                <span className="ml-1.5">{vista.etichetta}</span>
+                {vista.richiedeAuth && !adminAutenticato && (
+                  <LogIn className="ml-1 h-3 w-3 opacity-60" />
+                )}
+              </Button>
+            );
+          })}
         </nav>
 
         {/* Campanella notifiche, avatar admin e menu mobile */}
@@ -120,12 +120,12 @@ export default function Header() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative text-amber-700 hover:text-amber-900 hover:bg-amber-50"
+            className="relative text-amber-700 hover:text-amber-900 hover:bg-amber-50 transition-colors"
             onClick={() => gestisciClickDashboard()}
           >
             <Bell className="h-5 w-5" />
             {statistiche?.notificheNonLette > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-red-500 text-white text-[10px] border-0 animate-pulse">
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-red-500 text-white text-[10px] border-0 notifica-pulse">
                 {statistiche.notificheNonLette}
               </Badge>
             )}
@@ -135,8 +135,8 @@ export default function Header() {
           {adminAutenticato ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2 text-amber-700 hover:bg-amber-50">
-                  <div className="flex items-center justify-center h-7 w-7 rounded-full bg-emerald-100 text-emerald-700">
+                <Button variant="ghost" size="sm" className="gap-2 text-amber-700 hover:bg-amber-50 transition-colors">
+                  <div className="flex items-center justify-center h-7 w-7 rounded-full bg-emerald-100 text-emerald-700 shadow-sm">
                     <Shield className="h-3.5 w-3.5" />
                   </div>
                   <span className="hidden lg:inline text-sm font-medium">{adminNome}</span>
@@ -163,7 +163,7 @@ export default function Header() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-amber-600 hover:bg-amber-50 hover:text-amber-800 gap-1.5"
+              className="text-amber-600 hover:bg-amber-50 hover:text-amber-800 gap-1.5 transition-colors"
               onClick={() => impostaVista('dashboard')}
             >
               <LogIn className="h-4 w-4" />
@@ -178,35 +178,48 @@ export default function Header() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72">
-              <SheetTitle className="text-amber-700 mb-4 flex items-center gap-2">
-                <Dog className="h-5 w-5" />
-                Menu di Navigazione
-              </SheetTitle>
-              <nav className="flex flex-col gap-2">
-                {visteNavigazione.map((vista) => (
-                  <Button
-                    key={vista.id}
-                    variant={vistaAttuale === vista.id ? 'default' : 'ghost'}
-                    onClick={() => vista.id === 'dashboard' ? gestisciClickDashboard() : impostaVista(vista.id)}
-                    className={
-                      vistaAttuale === vista.id
-                        ? 'bg-amber-600 hover:bg-amber-700 text-white justify-start'
-                        : 'text-amber-700 hover:text-amber-900 hover:bg-amber-50 justify-start'
-                    }
-                  >
-                    {vista.icona}
-                    <span className="ml-2">{vista.etichetta}</span>
-                    {vista.richiedeAuth && !adminAutenticato && (
-                      <LogIn className="ml-auto h-3.5 w-3.5 opacity-60" />
-                    )}
-                  </Button>
-                ))}
+            <SheetContent side="right" className="w-72 p-0">
+              {/* Header menu mobile */}
+              <div className="bg-gradient-to-br from-amber-600 via-orange-500 to-amber-600 p-5 text-white">
+                <SheetTitle className="text-white mb-2 flex items-center gap-2.5">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/20 backdrop-blur-sm">
+                    <Dog className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="block text-base font-bold leading-tight">Naro a 4 Zampe</span>
+                    <span className="block text-[11px] text-amber-200 font-normal">Comune di Naro</span>
+                  </div>
+                </SheetTitle>
+              </div>
+
+              {/* Navigazione mobile */}
+              <nav className="flex flex-col gap-1 p-4">
+                {visteNavigazione.map((vista) => {
+                  const attivo = vistaAttuale === vista.id;
+                  return (
+                    <Button
+                      key={vista.id}
+                      variant={attivo ? 'default' : 'ghost'}
+                      onClick={() => vista.id === 'dashboard' ? gestisciClickDashboard() : impostaVista(vista.id)}
+                      className={`justify-start transition-all duration-200 ${
+                        attivo
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm'
+                          : 'text-amber-700 hover:text-amber-900 hover:bg-amber-50'
+                      }`}
+                    >
+                      {vista.icona}
+                      <span className="ml-2">{vista.etichetta}</span>
+                      {vista.richiedeAuth && !adminAutenticato && (
+                        <LogIn className="ml-auto h-3.5 w-3.5 opacity-60" />
+                      )}
+                    </Button>
+                  );
+                })}
 
                 {adminAutenticato && (
                   <>
-                    <div className="border-t my-2" />
-                    <div className="px-3 py-2 bg-emerald-50 rounded-lg flex items-center gap-2">
+                    <div className="border-t border-amber-100 my-3" />
+                    <div className="px-3 py-2.5 bg-emerald-50 rounded-lg flex items-center gap-2 border border-emerald-100">
                       <Shield className="h-4 w-4 text-emerald-600" />
                       <div>
                         <p className="text-xs font-medium text-emerald-800">{adminNome}</p>
@@ -215,12 +228,23 @@ export default function Header() {
                     </div>
                     <Button
                       variant="ghost"
-                      className="text-red-600 hover:bg-red-50 hover:text-red-700 justify-start"
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700 justify-start transition-colors"
                       onClick={gestisciLogout}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Esci dall&apos;account
                     </Button>
+                  </>
+                )}
+
+                {!adminAutenticato && (
+                  <>
+                    <div className="border-t border-amber-100 my-3" />
+                    <div className="px-3 py-2.5 bg-amber-50 rounded-lg border border-amber-100">
+                      <p className="text-[11px] text-amber-600 leading-relaxed">
+                        Accedi come amministratore per gestire le segnalazioni dal cruscotto di controllo.
+                      </p>
+                    </div>
                   </>
                 )}
               </nav>

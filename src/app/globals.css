@@ -171,3 +171,356 @@
 .leaflet-popup-tip {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
+
+/* === TACTICAL HUD STYLES === */
+
+/* Mirino centrale */
+.mirino-tattico {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.mirino-tattico::before,
+.mirino-tattico::after {
+  content: '';
+  position: absolute;
+  background: rgba(0, 255, 200, 0.6);
+}
+
+.mirino-tattico::before {
+  width: 1px;
+  height: 40px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 -25px 0 rgba(0, 255, 200, 0.3), 0 25px 0 rgba(0, 255, 200, 0.3);
+}
+
+.mirino-tattico::after {
+  width: 40px;
+  height: 1px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: -25px 0 0 rgba(0, 255, 200, 0.3), 25px 0 0 rgba(0, 255, 200, 0.3);
+}
+
+/* Animazione pulsazione mirino */
+@keyframes pulsazione-mirino {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.mirino-tattico {
+  animation: pulsazione-mirino 2s ease-in-out infinite;
+}
+
+/* Sweep sonar */
+.sweep-sonar {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  margin-left: -100px;
+  margin-top: -100px;
+  pointer-events: none;
+  z-index: 999;
+}
+
+@keyframes rotazione-sonar {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.sweep-sonar-linea {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 2px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgba(0, 255, 200, 0.6), transparent);
+  animation: rotazione-sonar 4s linear infinite;
+}
+
+/* Griglia cyber */
+.griglia-cyber {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 998;
+  background-image: 
+    linear-gradient(rgba(0, 255, 200, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 200, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Effetto scan-line */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.scanline-effetto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 200, 0.03) 2px,
+    rgba(0, 255, 200, 0.03) 4px
+  );
+}
+
+/* Pannello telemetria */
+.pannello-telemetria {
+  background: rgba(0, 10, 20, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 255, 200, 0.3);
+  color: rgba(0, 255, 200, 0.9);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+}
+
+/* Pulsante HUD attivo */
+.pulsante-hud {
+  background: rgba(0, 10, 20, 0.8);
+  border: 1px solid rgba(0, 255, 200, 0.4);
+  color: rgba(0, 255, 200, 0.9);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+
+.pulsante-hud:hover {
+  background: rgba(0, 255, 200, 0.15);
+  border-color: rgba(0, 255, 200, 0.7);
+}
+
+.pulsante-hud.disattivo {
+  border-color: rgba(255, 60, 60, 0.4);
+  color: rgba(255, 60, 60, 0.7);
+}
+
+/* Contatto radar */
+.contatto-radar {
+  border: 1px solid rgba(0, 255, 200, 0.2);
+  background: rgba(0, 10, 20, 0.7);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.contatto-radar:hover {
+  border-color: rgba(0, 255, 200, 0.6);
+  background: rgba(0, 255, 200, 0.1);
+}
+
+@keyframes lampeggio-punto {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.punto-lampeggiante {
+  animation: lampeggio-punto 1.5s ease-in-out infinite;
+}
+
+/* Leaflet custom for dark theme */
+.leaflet-container.dark-hud {
+  background: #0a0a12;
+}
+
+.dark-hud .leaflet-popup-content-wrapper {
+  background: rgba(0, 10, 20, 0.9) !important;
+  color: rgba(0, 255, 200, 0.9) !important;
+  border: 1px solid rgba(0, 255, 200, 0.3) !important;
+  border-radius: 8px !important;
+}
+
+.dark-hud .leaflet-popup-tip {
+  background: rgba(0, 10, 20, 0.9) !important;
+  border: 1px solid rgba(0, 255, 200, 0.3) !important;
+}
+
+.dark-hud .leaflet-popup-content {
+  margin: 10px 12px !important;
+}
+
+.dark-hud .leaflet-control-zoom a {
+  background: rgba(0, 10, 20, 0.8) !important;
+  color: rgba(0, 255, 200, 0.9) !important;
+  border-color: rgba(0, 255, 200, 0.3) !important;
+}
+
+.dark-hud .leaflet-control-attribution {
+  background: rgba(0, 10, 20, 0.7) !important;
+  color: rgba(0, 255, 200, 0.5) !important;
+}
+
+.dark-hud .leaflet-control-attribution a {
+  color: rgba(0, 255, 200, 0.7) !important;
+}
+
+/* === UI/UX ENHANCEMENT STYLES === */
+
+/* Animazione contatore */
+@keyframes conta-su {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Effetto glow sottile */
+.glow-sottile {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+}
+
+.glow-sottile:hover {
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
+}
+
+/* Effetto glassmorphism */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Glassmorphism scuro */
+.glassmorphism-scuro {
+  background: rgba(15, 15, 25, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+/* Bordo sinistro colorato per urgenza */
+.bordo-urgenza-bassa { border-left: 3px solid #22c55e; }
+.bordo-urgenza-media { border-left: 3px solid #eab308; }
+.bordo-urgenza-alta { border-left: 3px solid #f97316; }
+.bordo-urgenza-critica { border-left: 3px solid #ef4444; }
+
+/* Animazione entrata schede */
+@keyframes entrata-scheda {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.entrata-scheda {
+  animation: entrata-scheda 0.4s ease-out forwards;
+}
+
+/* Pulsante con effetto ripple */
+@keyframes ripple {
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+/* Tab attivo con glow */
+.tab-attivo-glow {
+  position: relative;
+}
+.tab-attivo-glow::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f59e0b, transparent);
+  border-radius: 1px;
+}
+
+/* Login scuro */
+.login-scuro {
+  background: linear-gradient(135deg, #0a0a12 0%, #111827 50%, #0a0a12 100%);
+}
+
+/* Pattern griglia sottile per sfondo */
+.pattern-griglia {
+  background-image: 
+    linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Pattern griglia scura */
+.pattern-griglia-scuro {
+  background-image: 
+    linear-gradient(rgba(245, 158, 11, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Animazione pulse notifica */
+@keyframes pulse-notifica {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+.notifica-pulse {
+  animation: pulse-notifica 2s ease-in-out infinite;
+}
+
+/* Hero title glow */
+@keyframes glow-titolo {
+  0%, 100% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.1); }
+  50% { text-shadow: 0 0 30px rgba(255, 255, 255, 0.25), 0 0 60px rgba(245, 158, 11, 0.15); }
+}
+
+.titolo-glow {
+  animation: glow-titolo 3s ease-in-out infinite;
+}
+
+/* Animazione paw prints nel hero */
+@keyframes paw-float {
+  0%, 100% { opacity: 0.04; transform: translateY(0) rotate(0deg); }
+  50% { opacity: 0.08; transform: translateY(-5px) rotate(5deg); }
+}
+
+.paw-fluttuante {
+  animation: paw-float 4s ease-in-out infinite;
+}
+
+/* Stats card hover glow */
+@keyframes bordo-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(245, 158, 11, 0); }
+  50% { box-shadow: 0 0 12px rgba(245, 158, 11, 0.15); }
+}
+
+.scheda-glow:hover {
+  animation: bordo-glow 1.5s ease-in-out infinite;
+}
+
+/* CTA gradient border */
+@keyframes gradiente-bordo {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.bordo-gradiente-animato {
+  background: linear-gradient(270deg, #f59e0b, #ef4444, #f59e0b);
+  background-size: 200% 200%;
+  animation: gradiente-bordo 4s ease infinite;
+}
+
+/* Scrollbar per tema scuro */
+.scrollbar-scuro::-webkit-scrollbar-track {
+  background: rgba(0, 10, 20, 0.3);
+}
+
+.scrollbar-scuro::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.4);
+}
+
+.scrollbar-scuro::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.6);
+}

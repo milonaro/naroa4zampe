@@ -6,6 +6,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
+// Coordinate del centro di Naro
+const NARO_LAT = 37.2964;
+const NARO_LNG = 13.7764;
+const RAGGIO_KM = 10; // Raggio operativo di 10 km dal centro
+
+// Formula di Haversine per il calcolo della distanza tra due punti geografici
+function distanzaKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // Schema di validazione per la creazione di una segnalazione
 const creaSegnalazioneSchema = z.object({
   titolo: z.string().min(3, 'Il titolo deve avere almeno 3 caratteri'),
@@ -23,6 +39,10 @@ const creaSegnalazioneSchema = z.object({
   emailSegnalatore: z.string().email('Email non valida'),
   telefonoSegnalatore: z.string().optional(),
   utenteId: z.string().optional(),
+  // Consensi obbligatori
+  consensoPrivacy: z.boolean().refine(val => val === true, 'Il consenso alla privacy è obbligatorio'),
+  consensoDichiarazione: z.boolean().refine(val => val === true, 'Il consenso alla dichiarazione è obbligatorio'),
+  dataConsenso: z.string().datetime().optional(),
 });
 
 // GET - Elenco segnalazioni con filtri e paginazione
@@ -31,6 +51,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const stato = searchParams.get('stato');
     const urgenza = searchParams.get('urgenza');
+    const search = searchParams.get('search');
+    const fuoriZona = searchParams.get('fuoriZona');
     const pagina = parseInt(searchParams.get('pagina') || '1');
     const perPagina = parseInt(searchParams.get('perPagina') || '20');
 
@@ -38,6 +60,20 @@ export async function GET(request: NextRequest) {
     const filtri: Record<string, unknown> = {};
     if (stato) filtri.stato = stato;
     if (urgenza) filtri.urgenza = urgenza;
+
+    // Filtro ricerca per titolo o descrizione (case-insensitive con SQLite)
+    // Nota: SQLite contains è già case-insensitive di default
+    if (search) {
+      filtri.OR = [
+        { titolo: { contains: search } },
+        { descrizione: { contains: search } },
+      ];
+    }
+
+    // Filtro per fuori zona
+    if (fuoriZona !== null) {
+      filtri.fuoriZona = fuoriZona === 'true';
+    }
 
     const [segnalazioni, totale] = await Promise.all([
       db.segnalazione.findMany({
@@ -76,9 +112,23 @@ export async function POST(request: NextRequest) {
     const corpo = await request.json();
     const datiValidati = creaSegnalazioneSchema.parse(corpo);
 
+    // Calcolo della distanza dal centro di Naro tramite formula di Haversine
+    const distanza = distanzaKm(NARO_LAT, NARO_LNG, datiValidati.latitudine, datiValidati.longitudine);
+    const fuoriZona = distanza > RAGGIO_KM;
+
+    // Preparazione dati per la creazione (rimuovo i campi non appartenenti al modello)
+    const { consensoPrivacy, consensoDichiarazione, dataConsenso, ...altriDati } = datiValidati;
+
     // Creazione della segnalazione
     const segnalazione = await db.segnalazione.create({
-      data: datiValidati,
+      data: {
+        ...altriDati,
+        consensoPrivacy,
+        consensoDichiarazione,
+        dataConsenso: dataConsenso ? new Date(dataConsenso) : new Date(),
+        raggioOperativo: distanza,
+        fuoriZona,
+      },
     });
 
     // Creazione notifica automatica

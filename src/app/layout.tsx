@@ -12,11 +12,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Metadati dell'applicazione CaneRandagio Naro
+// Metadati dell'applicazione Naro a 4 Zampe
 export const metadata: Metadata = {
-  title: "CaneRandagio Naro - Segnalazione Cani Randagi",
-  description: "Applicazione del Comune di Naro per la segnalazione e gestione di cani randagi sul territorio. Segnala avvistamenti e aiuta la comunità.",
-  keywords: ["Naro", "cani randagi", "segnalazione", "Comune di Naro", "Sicilia", "randagismo"],
+  title: "Naro a 4 Zampe - Segnalazione Cani Randagi",
+  description: "Applicazione del Comune di Naro per la segnalazione e gestione di cani randagi. Segnala avvistamenti e aiuta la comunità.",
+  keywords: ["Naro", "Naro a 4 Zampe", "cani randagi", "segnalazione", "Comune di Naro", "Sicilia", "randagismo"],
   authors: [{ name: "Comune di Naro" }],
   icons: {
     icon: "/logo.svg",

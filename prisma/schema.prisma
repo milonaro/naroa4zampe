@@ -1,4 +1,4 @@
-// Schema del database per l'applicazione CaneRandagio Naro
+// Schema del database per l'applicazione Naro a 4 Zampe
 // Gestione segnalazioni di cani randagi nel comune di Naro
 
 generator client {
@@ -47,10 +47,18 @@ model Segnalazione {
   cognomeSegnalatore String
   emailSegnalatore  String
   telefonoSegnalatore String?
+  // Consensi e privacy (GDPR)
+  consensoPrivacy       Boolean  @default(false)  // consenso al trattamento dati
+  consensoDichiarazione Boolean  @default(false)  // dichiarazione di responsabilità
+  dataConsenso          DateTime?                // data in cui è stato dato il consenso
+  // Zona operativa
+  raggioOperativo       Float?                   // distanza in km dal centro di Naro
+  fuoriZona             Boolean  @default(false) // true se fuori dal raggio operativo
   // Relazioni
   utenteId    String?
   utente      Utente?  @relation(fields: [utenteId], references: [id])
   notifiche   Notifica[]
+  logModifiche LogModifica[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -64,4 +72,16 @@ model Notifica {
   segnalazioneId String
   segnalazione   Segnalazione @relation(fields: [segnalazioneId], references: [id])
   createdAt      DateTime @default(now())
+}
+
+// Log delle modifiche apportate alle segnalazioni
+model LogModifica {
+  id               String   @id @default(cuid())
+  campoModificato  String   // e.g. "stato"
+  valorePrecedente String   // valore precedente
+  valoreNuovo      String   // nuovo valore
+  modificatoDa     String   // email dell'admin che ha effettuato la modifica
+  segnalazioneId   String
+  segnalazione     Segnalazione @relation(fields: [segnalazioneId], references: [id])
+  createdAt        DateTime @default(now())
 }

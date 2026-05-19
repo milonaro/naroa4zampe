@@ -7,9 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
-// Schema di validazione per l'aggiornamento dello stato
-const aggiornaStatoSchema = z.object({
-  stato: z.enum(['ricevuta', 'in_lavorazione', 'risolta', 'archiviata']),
+// Schema di validazione per l'aggiornamento della segnalazione
+const aggiornaSegnalazioneSchema = z.object({
+  stato: z.enum(['ricevuta', 'in_lavorazione', 'risolta', 'archiviata']).optional(),
+  modificatoDa: z.string().optional(),
 });
 
 // GET - Dettaglio di una singola segnalazione
@@ -21,7 +22,10 @@ export async function GET(
     const { id } = await params;
     const segnalazione = await db.segnalazione.findUnique({
       where: { id },
-      include: { notifiche: { orderBy: { createdAt: 'desc' } } },
+      include: {
+        notifiche: { orderBy: { createdAt: 'desc' } },
+        logModifiche: { orderBy: { createdAt: 'desc' } },
+      },
     });
 
     if (!segnalazione) {
@@ -41,7 +45,7 @@ export async function GET(
   }
 }
 
-// PATCH - Aggiornamento stato segnalazione
+// PATCH - Aggiornamento segnalazione
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -49,7 +53,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const corpo = await request.json();
-    const datiValidati = aggiornaStatoSchema.parse(corpo);
+    const datiValidati = aggiornaSegnalazioneSchema.parse(corpo);
 
     // Verifica che la segnalazione esista
     const segnalazioneEsistente = await db.segnalazione.findUnique({
@@ -63,27 +67,50 @@ export async function PATCH(
       );
     }
 
-    // Aggiornamento dello stato
+    // Preparazione dati per l'aggiornamento
+    const datiAggiornamento: Record<string, unknown> = {};
+
+    // Aggiornamento dello stato se fornito
+    if (datiValidati.stato !== undefined) {
+      datiAggiornamento.stato = datiValidati.stato;
+    }
+
+    // Aggiornamento della segnalazione
     const segnalazione = await db.segnalazione.update({
       where: { id },
-      data: { stato: datiValidati.stato },
+      data: datiAggiornamento,
     });
+
+    // Creazione del log di modifica se lo stato è cambiato
+    if (datiValidati.stato !== undefined && datiValidati.stato !== segnalazioneEsistente.stato) {
+      await db.logModifica.create({
+        data: {
+          segnalazioneId: id,
+          campoModificato: 'stato',
+          valorePrecedente: segnalazioneEsistente.stato,
+          valoreNuovo: datiValidati.stato,
+          modificatoDa: corpo.modificatoDa || 'sconosciuto',
+        },
+      });
+    }
 
     // Creazione notifica per il cambio di stato
-    const messaggiStato: Record<string, string> = {
-      ricevuta: 'La segnalazione è stata registrata',
-      in_lavorazione: 'La segnalazione è in fase di lavorazione',
-      risolta: 'La segnalazione è stata risolta',
-      archiviata: 'La segnalazione è stata archiviata',
-    };
+    if (datiValidati.stato !== undefined) {
+      const messaggiStato: Record<string, string> = {
+        ricevuta: 'La segnalazione è stata registrata',
+        in_lavorazione: 'La segnalazione è in fase di lavorazione',
+        risolta: 'La segnalazione è stata risolta',
+        archiviata: 'La segnalazione è stata archiviata',
+      };
 
-    await db.notifica.create({
-      data: {
-        messaggio: `${messaggiStato[datiValidati.stato]}: ${segnalazioneEsistente.titolo}`,
-        tipo: 'aggiornamento_stato',
-        segnalazioneId: id,
-      },
-    });
+      await db.notifica.create({
+        data: {
+          messaggio: `${messaggiStato[datiValidati.stato]}: ${segnalazioneEsistente.titolo}`,
+          tipo: 'aggiornamento_stato',
+          segnalazioneId: id,
+        },
+      });
+    }
 
     return NextResponse.json(segnalazione);
   } catch (errore) {
@@ -108,6 +135,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+
+    // Eliminazione log delle modifiche associati
+    await db.logModifica.deleteMany({
+      where: { segnalazioneId: id },
+    });
 
     // Eliminazione notifiche associate
     await db.notifica.deleteMany({

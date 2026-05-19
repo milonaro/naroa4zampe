@@ -1,4 +1,5 @@
 // Componente DettaglioSegnalazione - Modal con i dettagli completi di una segnalazione
+// Include protezione privacy per i dati del segnalatore e sezioni GDPR
 
 'use client';
 
@@ -33,8 +34,23 @@ import {
   AlertTriangle,
   CheckCircle,
   FileText,
+  Shield,
+  Lock,
+  ShieldCheck,
+  ShieldAlert,
+  History,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
+
+// Interfaccia per il log delle modifiche
+interface LogModifica {
+  id: string;
+  campoModificato: string;
+  valorePrecedente: string;
+  valoreNuovo: string;
+  modificatoDa: string;
+  createdAt: string;
+}
 
 // Interfaccia segnalazione dettagliata
 interface SegnalazioneDettaglio {
@@ -54,6 +70,11 @@ interface SegnalazioneDettaglio {
   cognomeSegnalatore: string;
   emailSegnalatore: string;
   telefonoSegnalatore?: string;
+  consensoPrivacy: boolean;
+  consensoDichiarazione: boolean;
+  dataConsenso?: string;
+  fuoriZona: boolean;
+  raggioOperativo?: number;
   createdAt: string;
   updatedAt: string;
   notifiche: {
@@ -63,6 +84,7 @@ interface SegnalazioneDettaglio {
     letta: boolean;
     createdAt: string;
   }[];
+  logModifiche: LogModifica[];
 }
 
 // Etichette in italiano
@@ -101,8 +123,16 @@ const coloriStato: Record<string, string> = {
   archiviata: 'bg-gray-100 text-gray-800',
 };
 
+// Etichette per i campi modificati
+const etichetteCampo: Record<string, string> = {
+  stato: 'Stato',
+  urgenza: 'Urgenza',
+  titolo: 'Titolo',
+  descrizione: 'Descrizione',
+};
+
 export default function DettaglioSegnalazione() {
-  const { segnalazioneSelezionata, selezionaSegnalazione } = useStore();
+  const { segnalazioneSelezionata, selezionaSegnalazione, adminAutenticato } = useStore();
   const queryClient = useQueryClient();
 
   // Recupero dettagli segnalazione
@@ -122,7 +152,7 @@ export default function DettaglioSegnalazione() {
       const risposta = await fetch(`/api/segnalazioni/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stato }),
+        body: JSON.stringify({ stato, modificatoDa: adminAutenticato ? 'admin' : 'utente' }),
       });
       if (!risposta.ok) throw new Error('Errore nell\'aggiornamento');
       return risposta.json();
@@ -177,7 +207,7 @@ export default function DettaglioSegnalazione() {
           </div>
         ) : segnalazione ? (
           <div className="space-y-4">
-            {/* Badge urgenza e stato */}
+            {/* Badge urgenza, stato e fuori zona */}
             <div className="flex flex-wrap gap-2">
               <Badge className={`${coloriUrgenza[segnalazione.urgenza]} border-0`}>
                 Urgenza: {etichetteUrgenza[segnalazione.urgenza]}
@@ -185,6 +215,12 @@ export default function DettaglioSegnalazione() {
               <Badge className={`${coloriStato[segnalazione.stato]} border-0`}>
                 Stato: {etichetteStato[segnalazione.stato]}
               </Badge>
+              {segnalazione.fuoriZona && (
+                <Badge className="bg-red-600 text-white border-0 flex items-center gap-1">
+                  <ShieldAlert className="h-3 w-3" />
+                  Fuori Zona
+                </Badge>
+              )}
             </div>
 
             {/* Foto se presente */}
@@ -253,35 +289,146 @@ export default function DettaglioSegnalazione() {
                 <p className="text-xs text-amber-600">
                   Coordinate: {segnalazione.latitudine.toFixed(4)}, {segnalazione.longitudine.toFixed(4)}
                 </p>
+                {segnalazione.raggioOperativo != null && (
+                  <p className="text-xs text-amber-600">
+                    Distanza dal centro: {segnalazione.raggioOperativo.toFixed(1)} km
+                  </p>
+                )}
               </div>
             </div>
 
             <Separator className="bg-amber-100" />
 
-            {/* Dati segnalatore */}
+            {/* Dati segnalatore - visibili solo agli admin */}
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-amber-700 flex items-center gap-1.5">
                 <User className="h-4 w-4" />
                 Segnalatore
               </h4>
-              <div className="bg-amber-50 p-3 rounded-lg space-y-1.5">
-                <p className="text-sm text-amber-800">
-                  {segnalazione.nomeSegnalatore} {segnalazione.cognomeSegnalatore}
-                </p>
-                <div className="flex flex-wrap gap-3 text-xs text-amber-600">
-                  <span className="flex items-center gap-1">
-                    <Mail className="h-3 w-3" />
-                    {segnalazione.emailSegnalatore}
-                  </span>
-                  {segnalazione.telefonoSegnalatore && (
+              {adminAutenticato ? (
+                <div className="bg-amber-50 p-3 rounded-lg space-y-1.5">
+                  <p className="text-sm text-amber-800">
+                    {segnalazione.nomeSegnalatore} {segnalazione.cognomeSegnalatore}
+                  </p>
+                  <div className="flex flex-wrap gap-3 text-xs text-amber-600">
                     <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {segnalazione.telefonoSegnalatore}
+                      <Mail className="h-3 w-3" />
+                      {segnalazione.emailSegnalatore}
                     </span>
-                  )}
+                    {segnalazione.telefonoSegnalatore && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        {segnalazione.telefonoSegnalatore}
+                      </span>
+                    )}
+                  </div>
                 </div>
+              ) : (
+                <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg flex items-center gap-3">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 italic">
+                      I dati del segnalatore sono riservati e visibili solo agli operatori comunali autorizzati.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Separator className="bg-amber-100" />
+
+            {/* Sezione Dichiarazione e Privacy */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-amber-700 flex items-center gap-1.5">
+                <Shield className="h-4 w-4" />
+                Dichiarazione e Privacy
+              </h4>
+              <div className="bg-amber-50 p-3 rounded-lg space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  {segnalazione.consensoPrivacy ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                  )}
+                  <span className={segnalazione.consensoPrivacy ? 'text-green-700' : 'text-red-600'}>
+                    Consenso Privacy: {segnalazione.consensoPrivacy ? 'Acquisito' : 'Non acquisito'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  {segnalazione.consensoDichiarazione ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                  )}
+                  <span className={segnalazione.consensoDichiarazione ? 'text-green-700' : 'text-red-600'}>
+                    Dichiarazione di Responsabilità: {segnalazione.consensoDichiarazione ? 'Acquisita' : 'Non acquisita'}
+                  </span>
+                </div>
+                {adminAutenticato && segnalazione.dataConsenso && (
+                  <div className="flex items-center gap-2 text-xs text-amber-600 pt-1 border-t border-amber-200 mt-2">
+                    <Calendar className="h-3 w-3" />
+                    Data consenso: {new Date(segnalazione.dataConsenso).toLocaleDateString('it-IT', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Log Modifiche - visibile solo agli admin */}
+            {adminAutenticato && segnalazione.logModifiche && segnalazione.logModifiche.length > 0 && (
+              <>
+                <Separator className="bg-amber-100" />
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-amber-700 flex items-center gap-1.5">
+                    <History className="h-4 w-4" />
+                    Log Modifiche
+                  </h4>
+                  <div className="relative pl-4">
+                    {/* Linea verticale della timeline */}
+                    <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-amber-200" />
+                    <div className="space-y-3">
+                      {segnalazione.logModifiche.map((log, indice) => (
+                        <div key={log.id} className="relative flex items-start gap-3">
+                          {/* Punto della timeline */}
+                          <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 border-amber-400 bg-white z-10 mt-0.5 ${
+                            indice === 0 ? 'bg-amber-400' : ''
+                          }`} />
+                          {/* Contenuto del log */}
+                          <div className="flex-1 min-w-0 pb-1">
+                            <div className="text-xs text-amber-500 mb-0.5">
+                              {new Date(log.createdAt).toLocaleDateString('it-IT', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </div>
+                            <div className="text-sm text-amber-800">
+                              <span className="font-medium">{etichetteCampo[log.campoModificato] || log.campoModificato}</span>
+                              {' — '}
+                              <span className="text-amber-600 line-through">{etichetteStato[log.valorePrecedente] || log.valorePrecedente}</span>
+                              {' → '}
+                              <span className="text-green-700 font-medium">{etichetteStato[log.valoreNuovo] || log.valoreNuovo}</span>
+                            </div>
+                            <div className="text-xs text-amber-400 mt-0.5">
+                              da {log.modificatoDa}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             <Separator className="bg-amber-100" />
 
@@ -309,32 +456,34 @@ export default function DettaglioSegnalazione() {
               </span>
             </div>
 
-            {/* Azioni */}
-            <div className="flex items-center gap-3 pt-2">
-              <span className="text-sm font-medium text-amber-700 flex items-center gap-1">
-                <CheckCircle className="h-4 w-4" />
-                Cambia stato:
-              </span>
-              <Select
-                value={segnalazione.stato}
-                onValueChange={(nuovoStato) => {
-                  aggiornaStato.mutate({
-                    id: segnalazione.id,
-                    stato: nuovoStato,
-                  });
-                }}
-              >
-                <SelectTrigger className="w-[160px] border-amber-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ricevuta">Ricevuta</SelectItem>
-                  <SelectItem value="in_lavorazione">In lavorazione</SelectItem>
-                  <SelectItem value="risolta">Risolta</SelectItem>
-                  <SelectItem value="archiviata">Archiviata</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Azioni - solo admin può cambiare stato */}
+            {adminAutenticato && (
+              <div className="flex items-center gap-3 pt-2">
+                <span className="text-sm font-medium text-amber-700 flex items-center gap-1">
+                  <CheckCircle className="h-4 w-4" />
+                  Cambia stato:
+                </span>
+                <Select
+                  value={segnalazione.stato}
+                  onValueChange={(nuovoStato) => {
+                    aggiornaStato.mutate({
+                      id: segnalazione.id,
+                      stato: nuovoStato,
+                    });
+                  }}
+                >
+                  <SelectTrigger className="w-[160px] border-amber-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ricevuta">Ricevuta</SelectItem>
+                    <SelectItem value="in_lavorazione">In lavorazione</SelectItem>
+                    <SelectItem value="risolta">Risolta</SelectItem>
+                    <SelectItem value="archiviata">Archiviata</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-8 text-amber-500">
