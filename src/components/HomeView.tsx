@@ -1,4 +1,5 @@
 // Vista Home - Pagina principale con hero, statistiche e segnalazioni recenti
+// Design migliorato con animazioni fluide e micro-interazioni
 
 'use client';
 
@@ -14,13 +15,12 @@ import {
   FileText,
   MapPin,
   ArrowRight,
+  Sparkles,
+  PawPrint,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
 
-// Interfaccia per una segnalazione
 interface Segnalazione {
   id: string;
   titolo: string;
@@ -33,7 +33,6 @@ interface Segnalazione {
   createdAt: string;
 }
 
-// Interfaccia per le statistiche
 interface Statistiche {
   totale: number;
   recenti: number;
@@ -42,190 +41,129 @@ interface Statistiche {
   notificheNonLette: number;
 }
 
-// Colori per l'urgenza
-const coloriUrgenza: Record<string, string> = {
-  bassa: 'bg-green-100 text-green-800',
-  media: 'bg-yellow-100 text-yellow-800',
-  alta: 'bg-orange-100 text-orange-800',
-  critica: 'bg-red-100 text-red-800',
-};
+const coloriUrgenza: Record<string, string> = { bassa: 'bg-green-100 text-green-800', media: 'bg-yellow-100 text-yellow-800', alta: 'bg-orange-100 text-orange-800', critica: 'bg-red-100 text-red-800' };
+const coloriStato: Record<string, string> = { ricevuta: 'bg-sky-100 text-sky-800', in_lavorazione: 'bg-amber-100 text-amber-800', risolta: 'bg-emerald-100 text-emerald-800', archiviata: 'bg-gray-100 text-gray-800' };
+const etichetteUrgenza: Record<string, string> = { bassa: 'Bassa', media: 'Media', alta: 'Alta', critica: 'Critica' };
+const etichetteStato: Record<string, string> = { ricevuta: 'Ricevuta', in_lavorazione: 'In lavorazione', risolta: 'Risolta', archiviata: 'Archiviata' };
 
-// Colori per lo stato
-const coloriStato: Record<string, string> = {
-  ricevuta: 'bg-sky-100 text-sky-800',
-  in_lavorazione: 'bg-amber-100 text-amber-800',
-  risolta: 'bg-emerald-100 text-emerald-800',
-  archiviata: 'bg-gray-100 text-gray-800',
-};
-
-// Etichette in italiano
-const etichetteUrgenza: Record<string, string> = {
-  bassa: 'Bassa',
-  media: 'Media',
-  alta: 'Alta',
-  critica: 'Critica',
-};
-
-const etichetteStato: Record<string, string> = {
-  ricevuta: 'Ricevuta',
-  in_lavorazione: 'In lavorazione',
-  risolta: 'Risolta',
-  archiviata: 'Archiviata',
-};
+const contenitoreVariante = { nascosto: { opacity: 0 }, visibile: { opacity: 1, transition: { staggerChildren: 0.08 } } };
+const elementoVariante = { nascosto: { opacity: 0, y: 20 }, visibile: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
 
 export default function HomeView() {
   const { impostaVista, selezionaSegnalazione } = useStore();
 
-  // Recupero statistiche
   const { data: statistiche, isLoading: caricamentoStats } = useQuery<Statistiche>({
     queryKey: ['statistiche'],
-    queryFn: async () => {
-      const risposta = await fetch('/api/segnalazioni/stats');
-      return risposta.json();
-    },
+    queryFn: async () => { const r = await fetch('/api/segnalazioni/stats'); return r.json(); },
   });
 
-  // Recupero segnalazioni recenti
-  const { data: datiRecenti, isLoading: caricamentoRecenti } = useQuery<{
-    segnalazioni: Segnalazione[];
-  }>({
+  const { data: datiRecenti, isLoading: caricamentoRecenti } = useQuery<{ segnalazioni: Segnalazione[] }>({
     queryKey: ['segnalazioni-recenti'],
-    queryFn: async () => {
-      const risposta = await fetch('/api/segnalazioni?perPagina=5');
-      return risposta.json();
-    },
+    queryFn: async () => { const r = await fetch('/api/segnalazioni?perPagina=5'); return r.json(); },
   });
 
-  // Varianti di animazione
-  const contenitoreVariante = {
-    nascosto: { opacity: 0 },
-    visibile: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
-  };
-
-  const elementoVariante = {
-    nascosto: { opacity: 0, y: 20 },
-    visibile: { opacity: 1, y: 0 },
-  };
+  const schedeStats = [
+    { titolo: 'Totale Segnalazioni', valore: statistiche?.totale || 0, sottotitolo: 'ultimi 90 giorni', Icona: FileText, gradiente: 'from-amber-50 to-orange-50', bordo: 'border-amber-200', coloreTesto: 'text-amber-800', coloreIcona: 'text-amber-500' },
+    { titolo: 'In Attesa', valore: (statistiche?.perStato?.ricevuta || 0) + (statistiche?.perStato?.in_lavorazione || 0), sottotitolo: 'ricevute + in lavorazione', Icona: Clock, gradiente: 'from-sky-50 to-blue-50', bordo: 'border-sky-200', coloreTesto: 'text-sky-800', coloreIcona: 'text-sky-500' },
+    { titolo: 'Risolte', valore: statistiche?.perStato?.risolta || 0, sottotitolo: 'casi chiusi', Icona: CheckCircle, gradiente: 'from-emerald-50 to-green-50', bordo: 'border-emerald-200', coloreTesto: 'text-emerald-800', coloreIcona: 'text-emerald-500' },
+    { titolo: 'Urgenza Critica', valore: statistiche?.perUrgenza?.critica || 0, sottotitolo: 'intervento immediato', Icona: AlertTriangle, gradiente: 'from-red-50 to-orange-50', bordo: 'border-red-200', coloreTesto: 'text-red-800', coloreIcona: 'text-red-500' },
+  ];
 
   return (
     <div className="space-y-8 pb-8">
-      {/* Sezione Hero */}
+      {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 p-6 md:p-10 text-white"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-6 md:p-10 text-white shadow-xl shadow-amber-500/20"
       >
-        {/* Sfondo decorativo */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-4 right-4 text-[12rem] leading-none">🐕</div>
+        {/* Decorazioni sfondo */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+          <div className="absolute -bottom-10 -left-10 w-56 h-56 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute top-4 right-6 text-[10rem] leading-none opacity-[0.08] select-none">🐕</div>
+          <PawPrint className="absolute bottom-6 left-8 h-20 w-20 opacity-[0.06]" />
         </div>
+
         <div className="relative z-10">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">
-            Segnala Cani Randagi a Naro
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-5 w-5 text-amber-200" />
+            <span className="text-amber-200 text-sm font-medium">Comune di Naro</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-3 leading-tight">
+            Segnala Cani Randagi
           </h1>
-          <p className="text-amber-100 text-base md:text-lg max-w-2xl mb-6">
+          <p className="text-amber-100 text-base md:text-lg max-w-2xl mb-6 leading-relaxed">
             Aiuta il Comune di Naro a monitorare e gestire la presenza di cani randagi sul territorio.
-            Ogni segnalazione è importante per garantire la sicurezza dei cittadini e il benessere degli animali.
+            Ogni segnalazione è importante per la sicurezza dei cittadini e il benessere degli animali.
           </p>
-          <Button
-            size="lg"
-            className="bg-white text-amber-700 hover:bg-amber-50 font-semibold"
-            onClick={() => impostaVista('segnala')}
-          >
-            <FileText className="mr-2 h-5 w-5" />
-            Invia una Segnalazione
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              size="lg"
+              className="bg-white text-amber-700 hover:bg-amber-50 font-semibold shadow-lg shadow-amber-800/20 transition-all duration-200 hover:scale-[1.02]"
+              onClick={() => impostaVista('segnala')}
+            >
+              <FileText className="mr-2 h-5 w-5" />
+              Invia una Segnalazione
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white/30 text-white hover:bg-white/10 font-medium"
+              onClick={() => impostaVista('mappa')}
+            >
+              <MapPin className="mr-2 h-5 w-5" />
+              Vedi Mappa
+            </Button>
+          </div>
         </div>
       </motion.section>
 
-      {/* Sezione Statistiche */}
+      {/* Statistiche */}
       <motion.section
         variants={contenitoreVariante}
         initial="nascosto"
         animate="visibile"
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
-        <motion.div variants={elementoVariante}>
-          <Card className="border-amber-200 hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-amber-700">Totale Segnalazioni</CardTitle>
-              <FileText className="h-4 w-4 text-amber-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-800">
-                {caricamentoStats ? '...' : statistiche?.totale || 0}
-              </div>
-              <p className="text-xs text-amber-600 mt-1">ultimi 90 giorni</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={elementoVariante}>
-          <Card className="border-sky-200 hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-sky-700">In Attesa</CardTitle>
-              <Clock className="h-4 w-4 text-sky-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-sky-800">
-                {caricamentoStats
-                  ? '...'
-                  : (statistiche?.perStato?.ricevuta || 0) +
-                    (statistiche?.perStato?.in_lavorazione || 0)}
-              </div>
-              <p className="text-xs text-sky-600 mt-1">ricevute + in lavorazione</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={elementoVariante}>
-          <Card className="border-emerald-200 hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-emerald-700">Risolte</CardTitle>
-              <CheckCircle className="h-4 w-4 text-emerald-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-800">
-                {caricamentoStats ? '...' : statistiche?.perStato?.risolta || 0}
-              </div>
-              <p className="text-xs text-emerald-600 mt-1">casi chiusi</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={elementoVariante}>
-          <Card className="border-red-200 hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-red-700">Urgenza Critica</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-800">
-                {caricamentoStats ? '...' : statistiche?.perUrgenza?.critica || 0}
-              </div>
-              <p className="text-xs text-red-600 mt-1">richiedono intervento immediato</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {schedeStats.map((scheda) => {
+          const Icona = scheda.Icona;
+          return (
+            <motion.div key={scheda.titolo} variants={elementoVariante}>
+              <Card className={`${scheda.bordo} bg-gradient-to-br ${scheda.gradiente} hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium text-amber-700">{scheda.titolo}</CardTitle>
+                  <Icona className={`h-4 w-4 ${scheda.coloreIcona}`} />
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl sm:text-3xl font-bold ${scheda.coloreTesto}`}>
+                    {caricamentoStats ? <span className="inline-block w-10 h-8 bg-amber-200/50 animate-pulse rounded" /> : scheda.valore}
+                  </div>
+                  <p className="text-[11px] text-amber-500 mt-1">{scheda.sottotitolo}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
       </motion.section>
 
-      {/* Sezione Segnalazioni Recenti */}
+      {/* Segnalazioni Recenti */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg text-amber-800">Segnalazioni Recenti</CardTitle>
+        <Card className="border-amber-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-lg text-amber-800 flex items-center gap-2">
+              <Dog className="h-5 w-5 text-amber-500" />
+              Segnalazioni Recenti
+            </CardTitle>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="text-amber-700 border-amber-300 hover:bg-amber-50"
+              className="text-amber-600 hover:text-amber-800 hover:bg-amber-50"
               onClick={() => impostaVista('mappa')}
             >
               Vedi tutte
@@ -234,10 +172,9 @@ export default function HomeView() {
           </CardHeader>
           <CardContent>
             {caricamentoRecenti ? (
-              // Skeleton di caricamento
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse flex items-center gap-3 p-3 rounded-lg">
+                  <div key={i} className="animate-pulse flex items-center gap-3 p-3 rounded-xl">
                     <div className="h-10 w-10 bg-amber-100 rounded-full" />
                     <div className="flex-1 space-y-2">
                       <div className="h-4 bg-amber-100 rounded w-2/3" />
@@ -247,67 +184,47 @@ export default function HomeView() {
                 ))}
               </div>
             ) : datiRecenti?.segnalazioni?.length === 0 ? (
-              <div className="text-center py-8 text-amber-600">
-                <Dog className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Nessuna segnalazione trovata</p>
-                <p className="text-sm text-amber-500">Sii il primo a segnalare un cane randagio!</p>
+              <div className="text-center py-10 text-amber-500">
+                <Dog className="h-14 w-14 mx-auto mb-3 opacity-40" />
+                <p className="font-medium">Nessuna segnalazione trovata</p>
+                <p className="text-sm text-amber-400 mt-1">Sii il primo a segnalare un cane randagio!</p>
               </div>
             ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {datiRecenti?.segnalazioni?.map((segnalazione) => (
-                  <div
-                    key={segnalazione.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-amber-100 hover:bg-amber-50/50 cursor-pointer transition-colors"
-                    onClick={() => {
-                      selezionaSegnalazione(segnalazione.id);
-                    }}
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {datiRecenti?.segnalazioni?.map((seg, i) => (
+                  <motion.div
+                    key={seg.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-amber-100 hover:bg-amber-50/50 hover:border-amber-200 cursor-pointer transition-all duration-200"
+                    onClick={() => selezionaSegnalazione(seg.id)}
                   >
-                    {/* Icona urgenza */}
-                    <div className={`flex items-center justify-center h-10 w-10 rounded-full ${
-                      segnalazione.urgenza === 'critica'
-                        ? 'bg-red-100'
-                        : segnalazione.urgenza === 'alta'
-                        ? 'bg-orange-100'
-                        : segnalazione.urgenza === 'media'
-                        ? 'bg-yellow-100'
-                        : 'bg-green-100'
+                    <div className={`flex items-center justify-center h-10 w-10 rounded-full shrink-0 ${
+                      seg.urgenza === 'critica' ? 'bg-red-100' : seg.urgenza === 'alta' ? 'bg-orange-100' : seg.urgenza === 'media' ? 'bg-yellow-100' : 'bg-green-100'
                     }`}>
                       <Dog className={`h-5 w-5 ${
-                        segnalazione.urgenza === 'critica'
-                          ? 'text-red-600'
-                          : segnalazione.urgenza === 'alta'
-                          ? 'text-orange-600'
-                          : segnalazione.urgenza === 'media'
-                          ? 'text-yellow-600'
-                          : 'text-green-600'
+                        seg.urgenza === 'critica' ? 'text-red-600' : seg.urgenza === 'alta' ? 'text-orange-600' : seg.urgenza === 'media' ? 'text-yellow-600' : 'text-green-600'
                       }`} />
                     </div>
-
-                    {/* Dettagli segnalazione */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-amber-900 truncate">
-                        {segnalazione.titolo}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {segnalazione.indirizzo && (
-                          <span className="text-xs text-amber-600 flex items-center gap-0.5 truncate">
-                            <MapPin className="h-3 w-3 flex-shrink-0" />
-                            {segnalazione.indirizzo}
-                          </span>
-                        )}
-                      </div>
+                      <p className="text-sm font-medium text-amber-900 truncate">{seg.titolo}</p>
+                      {seg.indirizzo && (
+                        <span className="text-xs text-amber-500 flex items-center gap-0.5 truncate mt-0.5">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          {seg.indirizzo}
+                        </span>
+                      )}
                     </div>
-
-                    {/* Badge urgenza e stato */}
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      <Badge className={`${coloriUrgenza[segnalazione.urgenza]} text-[10px] px-1.5 py-0 border-0`}>
-                        {etichetteUrgenza[segnalazione.urgenza] || segnalazione.urgenza}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <Badge className={`${coloriUrgenza[seg.urgenza]} text-[10px] px-1.5 py-0 border-0`}>
+                        {etichetteUrgenza[seg.urgenza] || seg.urgenza}
                       </Badge>
-                      <Badge className={`${coloriStato[segnalazione.stato]} text-[10px] px-1.5 py-0 border-0`}>
-                        {etichetteStato[segnalazione.stato] || segnalazione.stato}
+                      <Badge className={`${coloriStato[seg.stato]} text-[10px] px-1.5 py-0 border-0`}>
+                        {etichetteStato[seg.stato] || seg.stato}
                       </Badge>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -315,35 +232,30 @@ export default function HomeView() {
         </Card>
       </motion.section>
 
-      {/* Sezione Call to Action */}
+      {/* CTA */}
       <motion.section
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.5 }}
       >
-        <Card className="border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50">
-          <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 p-6">
+        <Card className="border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 shadow-sm overflow-hidden relative">
+          <div className="absolute -right-8 -bottom-8 text-[8rem] opacity-[0.06] select-none">🐾</div>
+          <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 relative z-10">
             <div>
-              <h3 className="text-lg font-semibold text-amber-800">
+              <h3 className="text-lg font-bold text-amber-800 flex items-center gap-2">
+                <PawPrint className="h-5 w-5 text-amber-500" />
                 Hai visto un cane randagio?
               </h3>
-              <p className="text-amber-600 text-sm mt-1">
-                La tua segnalazione può fare la differenza. Aiutaci a proteggere cittadini e animali.
+              <p className="text-amber-600 text-sm mt-1 max-w-md">
+                La tua segnalazione può fare la differenza. Aiutaci a proteggere cittadini e animali del nostro territorio.
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button
-                className="bg-amber-600 hover:bg-amber-700 text-white"
-                onClick={() => impostaVista('segnala')}
-              >
+            <div className="flex gap-3 shrink-0">
+              <Button className="bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-600/20 transition-all hover:scale-[1.02]" onClick={() => impostaVista('segnala')}>
                 <FileText className="mr-2 h-4 w-4" />
                 Segnala Ora
               </Button>
-              <Button
-                variant="outline"
-                className="border-amber-300 text-amber-700 hover:bg-amber-100"
-                onClick={() => impostaVista('mappa')}
-              >
+              <Button variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100" onClick={() => impostaVista('mappa')}>
                 <MapPin className="mr-2 h-4 w-4" />
                 Vedi Mappa
               </Button>

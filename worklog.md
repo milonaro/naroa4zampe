@@ -14,13 +14,31 @@ Work Log:
 - Integrato Leaflet per mappa interattiva con marker colorati per urgenza
 - Creato dashboard admin con grafici recharts (barre e torta)
 - Seeded 15 segnalazioni demo con dati realistici di Naro
-- Verificato funzionamento di tutti gli endpoint API (tutti ritornano 200)
-- Lint: 0 errori, 1 warning (react-hook-form watch - atteso)
 
 Stage Summary:
 - Applicazione completa e funzionante su http://localhost:3000
-- Tutte le API operative: /api/segnalazioni, /api/segnalazioni/stats, /api/segnalazioni/[id], /api/notifiche, /api/seed
-- 15 segnalazioni demo con coordinate intorno a Naro (37.2964, 13.7764)
-- 7 notifiche non lette nel sistema
-- Tema colori ambra/arancio applicato
-- Tutto il codice e i commenti in italiano
+- Tutte le API operative
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Proteggere Dashboard con login/password + Migliorare UI/UX
+
+Work Log:
+- Creato API /api/auth con validazione Zod per autenticazione admin
+- Definite 3 credenziali admin: admin/Naro2024!, polizia/NaroRandagio24, ufficio/CaninaNaro!
+- Creato componente LoginView con form animato, toggle password visibility, feedback errori
+- Aggiornato store Zustand con adminAutenticato, adminNome, loginAdmin, logoutAdmin
+- Aggiornato Header con dropdown admin (Shield icon, nome, logout), pulsante Admin/Login
+- Aggiornato page.tsx con AnimatePresence per transizioni fluide tra viste
+- Dashboard ora accessibile SOLO dopo autenticazione (reindirizza a LoginView)
+- Migliorato HomeView: hero con gradienti e decorazioni, schede stats con hover, animazioni stagger
+- Migliorato DashboardView: schede stats con gradienti, animazioni framer-motion, badge admin, tabs migliorati
+- Verificato funzionamento completo con agent-browser (login, dashboard, logout)
+- Zero errori nella console del browser
+
+Stage Summary:
+- Dashboard protetta con autenticazione (3 utenti admin)
+- UI/UX migliorata: animazioni fluide, gradienti, hover effects, transizioni vista
+- Login form professionale con toggle password e feedback
+- Header con dropdown admin e indicatore autenticazione
