@@ -36,6 +36,10 @@ model Segnalazione {
   razza       String?
   colore      String?
   taglia      String?   // "piccola", "media", "grande"
+  // Tipo di animale: "cane", "gatto", "altro"
+  tipoAnimale String    @default("cane")
+  // Motivazione della segnalazione: "randagismo", "abbandono", "maltrattamento", "smarrimento", "rinvenimento", "altro"
+  motivazione String    @default("randagismo")
   // Urgenza: "bassa", "media", "alta", "critica"
   urgenza     String    @default("media")
   // Stato della segnalazione: "ricevuta", "in_lavorazione", "risolta", "archiviata"

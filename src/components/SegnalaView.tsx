@@ -53,6 +53,8 @@ const segnalazioneSchema = z.object({
   razza: z.string().optional(),
   colore: z.string().optional(),
   taglia: z.enum(['piccola', 'media', 'grande']).optional(),
+  tipoAnimale: z.enum(['cane', 'gatto', 'altro']).default('cane'),
+  motivazione: z.enum(['randagismo', 'abbandono', 'maltrattamento', 'smarrimento', 'rinvenimento', 'altro']).default('randagismo'),
   urgenza: z.enum(['bassa', 'media', 'alta', 'critica']).default('media'),
   nomeSegnalatore: z.string().min(2, 'Il nome deve avere almeno 2 caratteri'),
   cognomeSegnalatore: z.string().min(2, 'Il cognome deve avere almeno 2 caratteri'),
@@ -112,6 +114,8 @@ export default function SegnalaView() {
   } = useForm<DatiSegnalazione>({
     resolver: zodResolver(segnalazioneSchema),
     defaultValues: {
+      tipoAnimale: 'cane',
+      motivazione: 'randagismo',
       urgenza: 'media',
       latitudine: 0,
       longitudine: 0,
@@ -121,6 +125,8 @@ export default function SegnalaView() {
   });
 
   const urgenzaSelezionata = watch('urgenza');
+  const tipoSelezionato = watch('tipoAnimale');
+  const motivazioneSelezionata = watch('motivazione');
 
   // Mutazione per creare una segnalazione
   const creaSegnalazione = useMutation({
@@ -326,41 +332,74 @@ export default function SegnalaView() {
               )}
             </div>
 
-            {/* Urgenza */}
+            {/* Tipo Animale */}
+            <div className="space-y-2">
+              <Label className="text-amber-700 font-medium">Tipo di animale *</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { valore: 'cane', emoji: '🐕', etichetta: 'Cane', colore: tipoSelezionato === 'cane' ? 'bg-orange-100 border-orange-400 text-orange-800 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-orange-50' },
+                  { valore: 'gatto', emoji: '🐈', etichetta: 'Gatto', colore: tipoSelezionato === 'gatto' ? 'bg-indigo-100 border-indigo-400 text-indigo-800 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-indigo-50' },
+                  { valore: 'altro', emoji: '🐾', etichetta: 'Altro', colore: tipoSelezionato === 'altro' ? 'bg-slate-100 border-slate-400 text-slate-800 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-slate-50' },
+                ].map((tipo) => (
+                  <button
+                    key={tipo.valore}
+                    type="button"
+                    onClick={() => setValue('tipoAnimale', tipo.valore as DatiSegnalazione['tipoAnimale'], { shouldValidate: true })}
+                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all duration-200 ${tipo.colore}`}
+                  >
+                    <span className="text-2xl">{tipo.emoji}</span>
+                    <span className="text-sm font-medium">{tipo.etichetta}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Motivazione */}
+            <div className="space-y-2">
+              <Label className="text-amber-700 font-medium">Motivazione *</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {[
+                  { valore: 'randagismo', etichetta: 'Randagismo', colore: motivazioneSelezionata === 'randagismo' ? 'bg-amber-100 border-amber-400 text-amber-800 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-amber-50', tooltip: 'Animale senza padrone che vaga sul territorio' },
+                  { valore: 'abbandono', etichetta: 'Abbandono', colore: motivazioneSelezionata === 'abbandono' ? 'bg-red-100 border-red-400 text-red-800 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-red-50', tooltip: 'Animale abbandonato dal proprietario' },
+                  { valore: 'maltrattamento', etichetta: 'Maltrattamento', colore: motivazioneSelezionata === 'maltrattamento' ? 'bg-purple-100 border-purple-400 text-purple-800 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-purple-50', tooltip: 'Animale vittima di violenza o maltrattamento' },
+                  { valore: 'smarrimento', etichetta: 'Smarrimento', colore: motivazioneSelezionata === 'smarrimento' ? 'bg-sky-100 border-sky-400 text-sky-800 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-sky-50', tooltip: 'Animale domestico che ha perso il proprietario' },
+                  { valore: 'rinvenimento', etichetta: 'Rinvenimento', colore: motivazioneSelezionata === 'rinvenimento' ? 'bg-teal-100 border-teal-400 text-teal-800 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-teal-50', tooltip: 'Animale trovato in un luogo specifico' },
+                  { valore: 'altro', etichetta: 'Altro', colore: motivazioneSelezionata === 'altro' ? 'bg-gray-100 border-gray-400 text-gray-800 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-gray-50', tooltip: 'Altra motivazione non elencata' },
+                ].map((mot) => (
+                  <button
+                    key={mot.valore}
+                    type="button"
+                    title={mot.tooltip}
+                    onClick={() => setValue('motivazione', mot.valore as DatiSegnalazione['motivazione'], { shouldValidate: true })}
+                    className={`p-2.5 rounded-xl border-2 transition-all duration-200 text-sm font-medium ${mot.colore}`}
+                  >
+                    {mot.etichetta}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Urgenza - Grid di pulsanti colorati */}
             <div className="space-y-2">
               <Label className="text-amber-700 font-medium">Livello di urgenza *</Label>
-              <Select
-                value={urgenzaSelezionata}
-                onValueChange={(valore) =>
-                  setValue('urgenza', valore as DatiSegnalazione['urgenza'], { shouldValidate: true })
-                }
-              >
-                <SelectTrigger className="h-11 border-amber-200 focus:border-amber-500">
-                  <SelectValue placeholder="Seleziona urgenza" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bassa">
-                    <span className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-green-500" /> Bassa
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="media">
-                    <span className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-yellow-500" /> Media
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="alta">
-                    <span className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-orange-500" /> Alta
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="critica">
-                    <span className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Critica
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { valore: 'bassa', etichetta: 'Bassa', colore: urgenzaSelezionata === 'bassa' ? 'bg-green-200 border-green-500 text-green-900 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-green-50', punto: 'bg-green-500' },
+                  { valore: 'media', etichetta: 'Media', colore: urgenzaSelezionata === 'media' ? 'bg-yellow-200 border-yellow-500 text-yellow-900 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-yellow-50', punto: 'bg-yellow-500' },
+                  { valore: 'alta', etichetta: 'Alta', colore: urgenzaSelezionata === 'alta' ? 'bg-orange-200 border-orange-500 text-orange-900 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-orange-50', punto: 'bg-orange-500' },
+                  { valore: 'critica', etichetta: 'Critica', colore: urgenzaSelezionata === 'critica' ? 'bg-red-200 border-red-500 text-red-900 shadow-sm' : 'bg-white border-amber-200 text-amber-700 hover:bg-red-50', punto: 'bg-red-500' },
+                ].map((urg) => (
+                  <button
+                    key={urg.valore}
+                    type="button"
+                    onClick={() => setValue('urgenza', urg.valore as DatiSegnalazione['urgenza'], { shouldValidate: true })}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-200 font-medium ${urg.colore}`}
+                  >
+                    <span className={`h-3 w-3 rounded-full ${urg.punto}`} />
+                    {urg.etichetta}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Griglia dettagli segnalazione */}

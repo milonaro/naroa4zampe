@@ -1,5 +1,5 @@
 // API per le statistiche delle segnalazioni
-// GET: restituisce conteggi per stato, urgenza e tendenze recenti
+// GET: restituisce conteggi per stato, urgenza, motivazione, tipoAnimale e tendenze recenti
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
@@ -16,6 +16,18 @@ export async function GET() {
     const perUrgenza = await db.segnalazione.groupBy({
       by: ['urgenza'],
       _count: { urgenza: true },
+    });
+
+    // Conteggi per motivazione
+    const perMotivazione = await db.segnalazione.groupBy({
+      by: ['motivazione'],
+      _count: { motivazione: true },
+    });
+
+    // Conteggi per tipo animale
+    const perTipoAnimale = await db.segnalazione.groupBy({
+      by: ['tipoAnimale'],
+      _count: { tipoAnimale: true },
     });
 
     // Totale segnalazioni
@@ -69,11 +81,25 @@ export async function GET() {
       conteggioUrgenza[item.urgenza] = item._count.urgenza;
     });
 
+    // Formattazione risultati per motivazione
+    const conteggioMotivazione: Record<string, number> = {};
+    perMotivazione.forEach((item) => {
+      conteggioMotivazione[item.motivazione] = item._count.motivazione;
+    });
+
+    // Formattazione risultati per tipo animale
+    const conteggioTipoAnimale: Record<string, number> = {};
+    perTipoAnimale.forEach((item) => {
+      conteggioTipoAnimale[item.tipoAnimale] = item._count.tipoAnimale;
+    });
+
     return NextResponse.json({
       totale,
       recenti,
       perStato: conteggioStato,
       perUrgenza: conteggioUrgenza,
+      perMotivazione: conteggioMotivazione,
+      perTipoAnimale: conteggioTipoAnimale,
       perMese,
       notificheNonLette,
     });

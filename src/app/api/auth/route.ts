@@ -12,9 +12,10 @@ const loginSchema = z.object({
 
 // Credenziali admin (in produzione: hash bcrypt + DB)
 const ADMIN_CREDENTIALS = [
-  { username: 'admin', password: 'Naro2024!', nome: 'Amministratore' },
-  { username: 'polizia', password: 'NaroRandagio24', nome: 'Polizia Municipale' },
-  { username: 'ufficio', password: 'CaninaNaro!', nome: 'Ufficio Animali' },
+  { username: 'admin', password: 'Naro2024!', nome: 'Amministratore', ruolo: 'amministratore' },
+  { username: 'polizia', password: 'NaroRandagio24', nome: 'Polizia Municipale', ruolo: 'polizia' },
+  { username: 'ufficio', password: 'CaninaNaro!', nome: 'Ufficio Animali', ruolo: 'ufficio' },
+  { username: 'dogvillage', password: 'DOGVillage24!', nome: 'DOG Village', ruolo: 'canile' },
 ];
 
 export async function POST(request: NextRequest) {
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
       successo: true,
       nome: utente.nome,
       username: utente.username,
+      ruolo: utente.ruolo,
       messaggio: `Benvenuto, ${utente.nome}!`,
     });
   } catch (errore) {

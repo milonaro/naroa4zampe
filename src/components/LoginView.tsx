@@ -35,7 +35,7 @@ export default function LoginView() {
       return dati;
     },
     onSuccess: (dati) => {
-      loginAdmin(dati.nome);
+      loginAdmin(dati.nome, dati.username, dati.ruolo);
       toast.success(dati.messaggio || 'Accesso riuscito!');
     },
     onError: (errore) => {

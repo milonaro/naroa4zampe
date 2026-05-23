@@ -1,6 +1,5 @@
 // Pagina principale dell'applicazione Naro a 4 Zampe
 // Gestisce la navigazione tra le diverse viste tramite Zustand store
-// Migliorato con sfondo pattern, footer professionale e transizioni fluide
 
 'use client';
 
@@ -15,8 +14,10 @@ import SegnalaView from '@/components/SegnalaView';
 import MappaView from '@/components/MappaView';
 import DashboardView from '@/components/DashboardView';
 import LoginView from '@/components/LoginView';
+import AreaPersonaleView from '@/components/AreaPersonaleView';
+import ChatAIView from '@/components/ChatAIView';
 import DettaglioSegnalazione from '@/components/DettaglioSegnalazione';
-import { PawPrint } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 // Componente provider per React Query
 function ProviderQuery({ children }: { children: React.ReactNode }) {
@@ -61,15 +62,14 @@ function ContenutoPrincipale() {
       case 'segnala': return <SegnalaView />;
       case 'mappa': return <MappaView />;
       case 'dashboard': return <DashboardView />;
+      case 'area-personale': return <AreaPersonaleView />;
+      case 'chat-ai': return <ChatAIView />;
       default: return <HomeView />;
     }
   };
 
-  // Determina se la vista corrente è scura (mappa, dashboard, login)
-  const vistaScura = vistaAttuale === 'mappa' || (vistaAttuale === 'dashboard' && adminAutenticato);
-
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-amber-50/50 to-white pattern-griglia">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-amber-50/50 to-white">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-6">
         <AnimatePresence mode="wait">
@@ -85,19 +85,7 @@ function ContenutoPrincipale() {
           </motion.div>
         </AnimatePresence>
       </main>
-      <footer className="border-t border-amber-100/60 bg-white/80 backdrop-blur-sm py-4">
-        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-amber-400">
-            <PawPrint className="h-4 w-4" />
-            <span className="text-sm font-medium text-amber-600">
-              Naro a 4 Zampe
-            </span>
-          </div>
-          <p className="text-xs text-amber-400">
-            &copy; {new Date().getFullYear()} Comune di Naro &mdash; Servizio segnalazione animali randagi
-          </p>
-        </div>
-      </footer>
+      <Footer />
       <DettaglioSegnalazione />
     </div>
   );

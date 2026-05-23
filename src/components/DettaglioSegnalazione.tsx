@@ -69,6 +69,8 @@ interface SegnalazioneDettaglio {
   razza?: string;
   colore?: string;
   taglia?: string;
+  tipoAnimale: string;
+  motivazione: string;
   urgenza: string;
   stato: string;
   fotoUrl?: string;
@@ -108,10 +110,34 @@ const etichetteStato: Record<string, string> = {
   archiviata: 'Archiviata',
 };
 
-const etichetteTaglia: Record<string, string> = {
-  piccola: 'Piccola (fino a 10kg)',
-  media: 'Media (10-25kg)',
-  grande: 'Grande (oltre 25kg)',
+const etichetteMotivazione: Record<string, string> = {
+  randagismo: 'Randagismo',
+  abbandono: 'Abbandono',
+  maltrattamento: 'Maltrattamento',
+  smarrimento: 'Smarrimento',
+  rinvenimento: 'Rinvenimento',
+  altro: 'Altro',
+};
+
+const etichetteTipoAnimale: Record<string, string> = {
+  cane: 'Cane 🐕',
+  gatto: 'Gatto 🐈',
+  altro: 'Altro 🐾',
+};
+
+const coloriMotivazione: Record<string, string> = {
+  randagismo: 'bg-amber-100 text-amber-800',
+  abbandono: 'bg-red-100 text-red-800',
+  maltrattamento: 'bg-purple-100 text-purple-800',
+  smarrimento: 'bg-sky-100 text-sky-800',
+  rinvenimento: 'bg-teal-100 text-teal-800',
+  altro: 'bg-gray-100 text-gray-800',
+};
+
+const coloriTipoAnimale: Record<string, string> = {
+  cane: 'bg-orange-100 text-orange-800',
+  gatto: 'bg-indigo-100 text-indigo-800',
+  altro: 'bg-slate-100 text-slate-800',
 };
 
 // Colori badge
@@ -352,7 +378,7 @@ export default function DettaglioSegnalazione() {
         if (!aperto) chiudiDialog();
       }}
     >
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-amber-800 flex items-center gap-2">
             {segnalazione ? (
@@ -379,13 +405,19 @@ export default function DettaglioSegnalazione() {
           </div>
         ) : segnalazione ? (
           <div className="space-y-4">
-            {/* Badge urgenza, stato e fuori zona */}
+            {/* Badge urgenza, stato, motivazione, tipo e fuori zona */}
             <div className="flex flex-wrap gap-2">
               <Badge className={`${coloriUrgenza[segnalazione.urgenza]} border-0`}>
                 Urgenza: {etichetteUrgenza[segnalazione.urgenza]}
               </Badge>
               <Badge className={`${coloriStato[segnalazione.stato]} border-0`}>
                 Stato: {etichetteStato[segnalazione.stato]}
+              </Badge>
+              <Badge className={`${coloriMotivazione[segnalazione.motivazione] || coloriMotivazione.altro} border-0`}>
+                {etichetteMotivazione[segnalazione.motivazione] || 'Altro'}
+              </Badge>
+              <Badge className={`${coloriTipoAnimale[segnalazione.tipoAnimale] || coloriTipoAnimale.altro} border-0`}>
+                {etichetteTipoAnimale[segnalazione.tipoAnimale] || 'Altro'}
               </Badge>
               {segnalazione.fuoriZona && (
                 <Badge className="bg-red-600 text-white border-0 flex items-center gap-1">
@@ -417,14 +449,21 @@ export default function DettaglioSegnalazione() {
               </Button>
             </div>
 
-            {/* Foto se presente */}
-            {segnalazione.fotoUrl && (
+            {/* Foto o placeholder */}
+            {segnalazione.fotoUrl ? (
               <div className="rounded-lg overflow-hidden border border-amber-200">
                 <img
                   src={segnalazione.fotoUrl}
                   alt="Foto dell'animale segnalato"
                   className="w-full max-h-64 object-cover"
                 />
+              </div>
+            ) : (
+              <div className="rounded-lg overflow-hidden border border-amber-200 bg-amber-50 flex items-center justify-center h-48">
+                <div className="text-center">
+                  <img src="/images/placeholder-animal.jpg" alt="Placeholder" className="h-32 w-32 object-cover rounded-lg mx-auto opacity-60" />
+                  <p className="text-xs text-amber-500 mt-2">Nessuna foto disponibile</p>
+                </div>
               </div>
             )}
 

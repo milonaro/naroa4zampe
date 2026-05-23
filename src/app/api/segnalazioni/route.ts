@@ -32,6 +32,8 @@ const creaSegnalazioneSchema = z.object({
   razza: z.string().optional(),
   colore: z.string().optional(),
   taglia: z.enum(['piccola', 'media', 'grande']).optional(),
+  tipoAnimale: z.enum(['cane', 'gatto', 'altro']).default('cane'),
+  motivazione: z.enum(['randagismo', 'abbandono', 'maltrattamento', 'smarrimento', 'rinvenimento', 'altro']).default('randagismo'),
   urgenza: z.enum(['bassa', 'media', 'alta', 'critica']).default('media'),
   fotoUrl: z.string().optional(),
   nomeSegnalatore: z.string().min(2, 'Il nome deve avere almeno 2 caratteri'),
@@ -51,8 +53,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const stato = searchParams.get('stato');
     const urgenza = searchParams.get('urgenza');
+    const motivazione = searchParams.get('motivazione');
+    const tipoAnimale = searchParams.get('tipoAnimale');
     const search = searchParams.get('search');
     const fuoriZona = searchParams.get('fuoriZona');
+    const emailSegnalatore = searchParams.get('emailSegnalatore');
     const pagina = parseInt(searchParams.get('pagina') || '1');
     const perPagina = parseInt(searchParams.get('perPagina') || '20');
 
@@ -60,6 +65,8 @@ export async function GET(request: NextRequest) {
     const filtri: Record<string, unknown> = {};
     if (stato) filtri.stato = stato;
     if (urgenza) filtri.urgenza = urgenza;
+    if (motivazione) filtri.motivazione = motivazione;
+    if (tipoAnimale) filtri.tipoAnimale = tipoAnimale;
 
     // Filtro ricerca per titolo o descrizione (case-insensitive con SQLite)
     // Nota: SQLite contains è già case-insensitive di default
@@ -68,6 +75,11 @@ export async function GET(request: NextRequest) {
         { titolo: { contains: search } },
         { descrizione: { contains: search } },
       ];
+    }
+
+    // Filtro per email segnalatore (area personale)
+    if (emailSegnalatore) {
+      filtri.emailSegnalatore = { contains: emailSegnalatore };
     }
 
     // Filtro per fuori zona
@@ -83,6 +95,7 @@ export async function GET(request: NextRequest) {
         take: perPagina,
         include: {
           notifiche: { take: 1, orderBy: { createdAt: 'desc' } },
+          logModifiche: { orderBy: { createdAt: 'desc' } },
         },
       }),
       db.segnalazione.count({ where: filtri }),
