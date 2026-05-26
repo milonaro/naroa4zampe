@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 import { getComuneConfig } from '@/lib/tenant';
+import { segnalazioniLimiter, getClientIp, checkRateLimit } from '@/lib/rate-limit';
 
 // Formula di Haversine per il calcolo della distanza tra due punti geografici
 function distanzaKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -118,6 +119,11 @@ export async function GET(request: NextRequest) {
 // POST - Creazione nuova segnalazione
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 10 richieste per IP ogni 15 minuti
+    const ip = getClientIp(request);
+    const rateLimitResponse = await checkRateLimit(segnalazioniLimiter, ip);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const corpo = await request.json();
     const datiValidati = creaSegnalazioneSchema.parse(corpo);
 

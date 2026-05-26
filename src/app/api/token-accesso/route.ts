@@ -1,11 +1,14 @@
 // API per la gestione dei token di accesso all'Area Personale
-// POST /api/token-accesso - Genera un nuovo token e lo invia via email (demo: mostrato in risposta)
-// POST /api/token-accesso/verifica - Verifica il token e restituisce l'email associata
+// POST /api/token-accesso - Genera un nuovo token e lo invia via email (FIX-02)
+// Se il corpo contiene { email, token } → verifica il token
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import crypto from 'crypto';
+import { sendOtpEmail } from '@/lib/email';
+import { getComuneConfig } from '@/lib/tenant';
+import { otpLimiter, getClientIp, checkRateLimit } from '@/lib/rate-limit';
 
 // Schema validazione per richiesta token
 const richiediTokenSchema = z.object({
@@ -23,11 +26,14 @@ function generaToken(): string {
   return crypto.randomInt(100000, 1000000).toString();
 }
 
-// POST: Genera un nuovo token di accesso
+// POST: Genera un nuovo token di accesso o verifica un token esistente
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting basilare: massimo 5 richieste per IP in 5 minuti
-    // In produzione usare un middleware dedicato (es. upstash/ratelimit)
+    // Rate limiting: 5 richieste per IP ogni 15 minuti (si aggiunge al per-email)
+    const ip = getClientIp(request);
+    const rateLimitResponse = await checkRateLimit(otpLimiter, ip);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const corpo = await request.json();
 
     // Controlla se è una richiesta di verifica o generazione
@@ -69,11 +75,11 @@ export async function POST(request: NextRequest) {
       const datiValidati = richiediTokenSchema.parse(corpo);
       const email = datiValidati.email.toLowerCase().trim();
 
-      // Limita richieste: massimo 3 token non scaduti per email
+      // Limita richieste: massimo 3 token non scaduti per email in 5 minuti
       const tokenRecenti = await db.tokenAccesso.count({
         where: {
           email,
-          createdAt: { gt: new Date(Date.now() - 5 * 60 * 1000) }, // ultimi 5 minuti
+          createdAt: { gt: new Date(Date.now() - 5 * 60 * 1000) },
         },
       });
 
@@ -102,16 +108,27 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // In produzione: inviare il token via email con servizio SMTP
-      // Per demo: restituiamo il token nella risposta SOLO in sviluppo
-      const isDev = process.env.NODE_ENV === 'development';
+      // Invia il token via email (FIX-02)
+      let nomeComune = 'Comune di Naro';
+      try {
+        const config = await getComuneConfig(db);
+        nomeComune = config.nomeComune;
+      } catch {
+        // fallback al default
+      }
 
+      const emailResult = await sendOtpEmail(email, token, nomeComune);
+
+      if (!emailResult.success) {
+        console.error('Errore nell\'invio dell\'email OTP:', emailResult.error);
+        // Non esponiamo il token al client nemmeno in caso di errore email
+        // In sviluppo, il token è loggato nella console del server
+      }
+
+      // Il token NON viene mai restituito nella response al client
       return NextResponse.json({
         successo: true,
         messaggio: 'Codice di verifica inviato alla tua email',
-        // Il token è restituito SOLO in sviluppo per testing
-        // In produzione questo campo NON è presente
-        ...(isDev ? { _demo_token: token } : {}),
       });
     }
   } catch (errore) {

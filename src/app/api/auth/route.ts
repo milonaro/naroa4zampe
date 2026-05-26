@@ -1,11 +1,13 @@
 // API per l'autenticazione degli amministratori
 // POST: verifica credenziali e restituisce risultato
 // Le credenziali sono lette dal record Comune nel database (campo JSON)
+// Le password sono hashate con bcryptjs (FIX-01)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { parseCredenziali, CREDENZIALI_DEFAULT } from '@/lib/tenant';
+import { verifyPassword } from '@/lib/auth';
 
 // Schema di validazione per il login
 const loginSchema = z.object({
@@ -29,13 +31,22 @@ export async function POST(request: NextRequest) {
       // Fallback alle credenziali di default
     }
 
+    // Cerca l'utente per username, poi verifica la password con bcrypt
     const utente = credenziali.find(
-      (cred) =>
-        cred.username === datiValidati.username &&
-        cred.password === datiValidati.password
+      (cred) => cred.username === datiValidati.username
     );
 
     if (!utente) {
+      return NextResponse.json(
+        { errore: 'Credenziali non valide', successo: false },
+        { status: 401 }
+      );
+    }
+
+    // Verifica la password usando bcrypt (supporta sia hash che chiaro per migrazione)
+    const passwordCorretta = await verifyPassword(datiValidati.password, utente.password);
+
+    if (!passwordCorretta) {
       return NextResponse.json(
         { errore: 'Credenziali non valide', successo: false },
         { status: 401 }

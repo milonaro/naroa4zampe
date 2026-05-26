@@ -2,11 +2,13 @@
 // GET: restituisce la configurazione corrente (dati pubblici)
 // POST: setup iniziale (crea il record Comune)
 // PUT: aggiorna la configurazione (solo admin autenticato)
+// Le password delle credenziali sono hashate con bcryptjs (FIX-01)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 import { getComuneConfig, parseCredenziali, CREDENZIALI_DEFAULT } from '@/lib/tenant';
+import { hashPassword } from '@/lib/auth';
 
 // Schema validazione per setup/aggiornamento
 const comuneSchema = z.object({
@@ -75,6 +77,15 @@ export async function POST(request: NextRequest) {
     const corpo = await request.json();
     const dati = comuneSchema.parse(corpo);
 
+    // Hasha le password delle credenziali prima di salvarle (FIX-01)
+    const credenzialiDaSalvare = dati.credenziali || CREDENZIALI_DEFAULT;
+    const credenzialiHashate = await Promise.all(
+      credenzialiDaSalvare.map(async (cred) => ({
+        ...cred,
+        password: await hashPassword(cred.password),
+      }))
+    );
+
     // Crea il record Comune
     const comune = await db.comune.create({
       data: {
@@ -90,7 +101,7 @@ export async function POST(request: NextRequest) {
         telefonoVeterinaria: dati.telefonoVeterinaria || null,
         emailComune: dati.emailComune || null,
         colorePrimario: dati.colorePrimario,
-        credenziali: JSON.stringify(dati.credenziali || CREDENZIALI_DEFAULT),
+        credenziali: JSON.stringify(credenzialiHashate),
         setupCompletato: true,
       },
     });
@@ -125,6 +136,18 @@ export async function PUT(request: NextRequest) {
     const corpo = await request.json();
     const dati = comuneSchema.parse(corpo);
 
+    // Se sono state fornite nuove credenziali, hasha le password (FIX-01)
+    let credenzialiAggiornate = undefined;
+    if (dati.credenziali) {
+      const credenzialiHashate = await Promise.all(
+        dati.credenziali.map(async (cred) => ({
+          ...cred,
+          password: await hashPassword(cred.password),
+        }))
+      );
+      credenzialiAggiornate = JSON.stringify(credenzialiHashate);
+    }
+
     const aggiornato = await db.comune.update({
       where: { id: esistente.id },
       data: {
@@ -140,7 +163,7 @@ export async function PUT(request: NextRequest) {
         telefonoVeterinaria: dati.telefonoVeterinaria || null,
         emailComune: dati.emailComune || null,
         colorePrimario: dati.colorePrimario,
-        ...(dati.credenziali ? { credenziali: JSON.stringify(dati.credenziali) } : {}),
+        ...(credenzialiAggiornate ? { credenziali: credenzialiAggiornate } : {}),
       },
     });
 

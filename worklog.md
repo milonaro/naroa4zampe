@@ -172,3 +172,41 @@ Stage Summary:
 - All sections iconized with consistent style across Home + Area Personale
 - Header icons enlarged, "accesso riservato" icon removed from header
 - Area Personale API now works (Prisma Client regenerated)
+
+---
+Task ID: 8
+Agent: Main
+Task: Brief Tecnico - Implementazione fix pre-lancio istituzionale (FIX-01 to FIX-07)
+
+Work Log:
+- FIX-01: Created src/lib/auth.ts with hashPassword(), verifyPassword(), isHashed() using bcryptjs (12 rounds)
+- FIX-01: Modified src/app/api/auth/route.ts to use verifyPassword() instead of plaintext comparison
+- FIX-01: Modified src/app/api/comune/route.ts to hash passwords before saving (POST and PUT)
+- FIX-01: Created scripts/migrate-passwords.ts for one-time migration of existing plaintext passwords
+- FIX-02: Created src/lib/email.ts with sendOtpEmail() using Resend SDK
+- FIX-02: Modified src/app/api/token-accesso/route.ts to send real email OTP, removed _demo_token from response
+- FIX-03: Replaced z-ai-web-dev-sdk with @anthropic-ai/sdk in src/app/api/chat-ai/route.ts
+- FIX-03: Using Claude Sonnet 4 (claude-sonnet-4-20250514) with 500 max tokens
+- FIX-03: Removed z-ai-web-dev-sdk from package.json dependencies
+- FIX-04: Created Dockerfile with multi-stage build (builder + runner)
+- FIX-04: Created docker-compose.yml with app, caddy, and backup services
+- FIX-04: Created .env.example with all required environment variables
+- FIX-04: Updated Caddyfile for Docker Compose (app:3000 target)
+- FIX-04: Created INSTALL.md with complete installation guide
+- FIX-05: Created scripts/backup.sh with SQLite safe backup, 30-day retention
+- FIX-05: Backup service integrated in docker-compose.yml (cron every night at 02:00)
+- FIX-06: Created src/app/api/health/route.ts with database connectivity check
+- FIX-07: Created src/lib/rate-limit.ts with rate-limiter-flexible (memory store)
+- FIX-07: Applied rate limiting to POST /api/segnalazioni (10 req/15min per IP)
+- FIX-07: Applied rate limiting to POST /api/token-accesso (5 req/15min per IP)
+- Build: Verified successful build with all new routes including /api/health
+- Test: Verified /api/health returns {"status":"ok","database":"connected","setup":true,"comune":"Comune di Naro"}
+
+Stage Summary:
+- All 7 fixes implemented and build verified ✓
+- Password hashing with bcryptjs (FIX-01) ✓
+- Real SMTP email via Resend (FIX-02) ✓
+- Anthropic SDK replacing z-ai-web-dev-sdk (FIX-03) ✓
+- Docker Compose deployment with Caddy + backup (FIX-04 + FIX-05) ✓
+- Health check endpoint (FIX-06) ✓
+- Rate limiting on public APIs (FIX-07) ✓
