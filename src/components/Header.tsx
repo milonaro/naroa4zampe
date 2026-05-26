@@ -40,11 +40,11 @@ interface Statistiche {
 
 // Configurazione delle viste di navigazione
 const visteNavigazione: { id: Vista; etichetta: string; icona: React.ReactNode; richiedeAuth?: boolean; hideDesktop?: boolean }[] = [
-  { id: 'home', etichetta: 'Home', icona: <Home className="h-6 w-6" /> },
-  { id: 'segnala', etichetta: 'Segnala', icona: <FileText className="h-6 w-6" /> },
-  { id: 'mappa', etichetta: 'Mappa', icona: <MapPin className="h-6 w-6" /> },
-  { id: 'area-personale', etichetta: 'Area Personale', icona: <User className="h-6 w-6" /> },
-  { id: 'chat-ai', etichetta: 'Chat AI', icona: <MessageSquare className="h-6 w-6" /> },
+  { id: 'home', etichetta: 'Home', icona: <Home className="h-7 w-7" /> },
+  { id: 'segnala', etichetta: 'Segnala', icona: <FileText className="h-7 w-7" /> },
+  { id: 'mappa', etichetta: 'Mappa', icona: <MapPin className="h-7 w-7" /> },
+  { id: 'area-personale', etichetta: 'Area Personale', icona: <User className="h-7 w-7" /> },
+  { id: 'chat-ai', etichetta: 'Chat AI', icona: <MessageSquare className="h-7 w-7" /> },
 ];
 
 export default function Header() {
@@ -82,8 +82,8 @@ export default function Header() {
           onClick={() => impostaVista('home')}
           className="flex items-center gap-2.5 hover:opacity-80 transition-opacity cursor-pointer"
         >
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white shadow-md shadow-yellow-500/30 transition-all duration-300">
-            <Dog className="h-6 w-6" />
+          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white shadow-md shadow-yellow-500/30 transition-all duration-300">
+            <Dog className="h-7 w-7" />
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-bold text-yellow-800 leading-tight tracking-tight">
@@ -128,7 +128,7 @@ export default function Header() {
                   : 'text-yellow-700 hover:text-yellow-900 hover:bg-yellow-50'
               }`}
             >
-              <BarChart3 className="h-6 w-6" />
+              <BarChart3 className="h-7 w-7" />
               <span className="ml-1.5 hidden xl:inline">Dashboard</span>
             </Button>
           )}
@@ -144,10 +144,10 @@ export default function Header() {
               className="relative text-yellow-700 hover:text-yellow-900 hover:bg-yellow-50 transition-colors cursor-pointer"
               onClick={() => gestisciClickDashboard()}
             >
-              <Bell className="h-5 w-5" />
-              {statistiche?.notificheNonLette > 0 && (
+              <Bell className="h-6 w-6" />
+              {(statistiche?.notificheNonLette ?? 0) > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-red-500 text-white text-[10px] border-0 animate-pulse">
-                  {statistiche.notificheNonLette}
+                  {statistiche?.notificheNonLette}
                 </Badge>
               )}
             </Button>
@@ -209,7 +209,7 @@ export default function Header() {
 
               {/* Navigazione mobile */}
               <nav className="flex flex-col gap-1 p-4">
-                {[...visteNavigazione, { id: 'dashboard' as Vista, etichetta: 'Dashboard', icona: <BarChart3 className="h-6 w-6" />, richiedeAuth: true }].map((vista) => {
+                {[...visteNavigazione, { id: 'dashboard' as Vista, etichetta: 'Dashboard', icona: <BarChart3 className="h-7 w-7" />, richiedeAuth: true }].map((vista) => {
                   const attivo = vistaAttuale === vista.id;
                   // Nascondi Dashboard nel menu mobile se non autenticato
                   if (vista.richiedeAuth && !adminAutenticato) return null;

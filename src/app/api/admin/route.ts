@@ -1,10 +1,13 @@
 // API per la gestione degli utenti admin
 // GET: elenco admin (solo super_admin)
 // POST: creazione nuovo admin (solo super_admin)
+// Utilizza il campo JSON credenziali del modello Comune
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { parseCredenziali, CREDENZIALI_DEFAULT } from '@/lib/tenant';
+import { hashPassword } from '@/lib/auth';
 
 // Schema validazione per nuovo admin
 const creaAdminSchema = z.object({
@@ -30,21 +33,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const admins = await db.adminUtente.findMany({
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        username: true,
-        nome: true,
-        email: true,
-        telefono: true,
-        foto: true,
-        ruolo: true,
-        attivo: true,
-        ultimoAccesso: true,
-        createdAt: true,
-      },
-    });
+    // Leggi credenziali dal record Comune
+    const comune = await db.comune.findFirst({ where: { attivo: true } });
+    const credenziali = comune?.credenziali
+      ? parseCredenziali(comune.credenziali)
+      : CREDENZIALI_DEFAULT;
+
+    // Mappa le credenziali come oggetti admin (senza password)
+    const admins = credenziali.map((cred, idx) => ({
+      id: String(idx + 1),
+      username: cred.username,
+      nome: cred.nome,
+      ruolo: cred.ruolo,
+      attivo: true,
+      createdAt: comune?.createdAt || new Date(),
+    }));
 
     return NextResponse.json({ admins });
   } catch (errore) {
@@ -69,11 +72,19 @@ export async function POST(request: NextRequest) {
 
     const datiValidati = creaAdminSchema.parse(datiAdmin);
 
-    // Verifica username non già in uso
-    const esistente = await db.adminUtente.findUnique({
-      where: { username: datiValidati.username },
-    });
+    // Leggi credenziali esistenti dal record Comune
+    const comune = await db.comune.findFirst({ where: { attivo: true } });
+    if (!comune) {
+      return NextResponse.json(
+        { errore: 'Nessuna configurazione comune trovata' },
+        { status: 404 }
+      );
+    }
 
+    const credenziali = parseCredenziali(comune.credenziali);
+
+    // Verifica username non già in uso
+    const esistente = credenziali.find((c) => c.username === datiValidati.username);
     if (esistente) {
       return NextResponse.json(
         { errore: 'Username già in uso' },
@@ -81,25 +92,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const nuovoAdmin = await db.adminUtente.create({
-      data: {
-        username: datiValidati.username,
-        password: datiValidati.password, // In produzione: hash con bcrypt
-        nome: datiValidati.nome,
-        email: datiValidati.email || null,
-        telefono: datiValidati.telefono || null,
-        ruolo: datiValidati.ruolo,
-        attivo: true,
-      },
+    // Hasha la password e aggiungi la nuova credenziale
+    const hashedPassword = await hashPassword(datiValidati.password);
+    const nuovaCredenziale = {
+      username: datiValidati.username,
+      password: hashedPassword,
+      nome: datiValidati.nome,
+      ruolo: datiValidati.ruolo,
+    };
+
+    const credenzialiAggiornate = [...credenziali, nuovaCredenziale];
+
+    // Salva nel campo JSON del Comune
+    await db.comune.update({
+      where: { id: comune.id },
+      data: { credenziali: JSON.stringify(credenzialiAggiornate) },
     });
 
     // Non restituire la password
-    const { password: _, ...adminSenzaPassword } = nuovoAdmin;
-    return NextResponse.json(adminSenzaPassword, { status: 201 });
+    const { password: _, ...adminSenzaPassword } = nuovaCredenziale;
+    return NextResponse.json({ ...adminSenzaPassword, id: String(credenzialiAggiornate.length) }, { status: 201 });
   } catch (errore) {
     if (errore instanceof z.ZodError) {
       return NextResponse.json(
-        { errore: 'Dati non validi', dettagli: errore.errors },
+        { errore: 'Dati non validi', dettagli: errore.issues },
         { status: 400 }
       );
     }

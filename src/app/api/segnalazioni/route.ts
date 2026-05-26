@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
   } catch (errore) {
     if (errore instanceof z.ZodError) {
       return NextResponse.json(
-        { errore: 'Dati non validi', dettagli: errore.errors },
+        { errore: 'Dati non validi', dettagli: errore.issues },
         { status: 400 }
       );
     }

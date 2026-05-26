@@ -1,25 +1,30 @@
 // API per la gestione degli account amministrativi (RBAC)
 // CRUD per account admin con privilegi
 // Accessibile solo da super_admin
+// Utilizza il campo JSON credenziali del modello Comune
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { parseCredenziali } from '@/lib/tenant';
+import { hashPassword } from '@/lib/auth';
 
 // GET: Lista tutti gli account admin
 export async function GET() {
   try {
-    const accounts = await db.accountAdmin.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const comune = await db.comune.findFirst({ where: { attivo: true } });
+    const credenziali = comune?.credenziali
+      ? parseCredenziali(comune.credenziali)
+      : [];
 
     // Non restituire le password
-    const accountsSicuri = accounts.map((account) => {
-      const { password: _pwd, ...safeAccount } = account;
-      return {
-        ...safeAccount,
-        privilegi: JSON.parse(safeAccount.privilegi || '[]'),
-      };
-    });
+    const accountsSicuri = credenziali.map((cred, idx) => ({
+      id: String(idx + 1),
+      username: cred.username,
+      nome: cred.nome,
+      ruolo: cred.ruolo,
+      attivo: true,
+      privilegi: [],
+    }));
 
     return NextResponse.json({ accounts: accountsSicuri });
   } catch (err) {
@@ -35,7 +40,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const corpo = await request.json();
-    const { username, nome, password, ruolo, privilegi } = corpo;
+    const { username, nome, password, ruolo } = corpo;
 
     if (!username || !nome || !password) {
       return NextResponse.json(
@@ -44,11 +49,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verifica se l'username esiste già
-    const esistente = await db.accountAdmin.findUnique({
-      where: { username },
-    });
+    const comune = await db.comune.findFirst({ where: { attivo: true } });
+    if (!comune) {
+      return NextResponse.json(
+        { errore: 'Comune non configurato' },
+        { status: 404 }
+      );
+    }
 
+    const credenziali = parseCredenziali(comune.credenziali);
+
+    // Verifica se l'username esiste già
+    const esistente = credenziali.find((c) => c.username === username);
     if (esistente) {
       return NextResponse.json(
         { errore: 'Username già in uso' },
@@ -56,18 +68,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const nuovoAccount = await db.accountAdmin.create({
-      data: {
-        username,
-        nome,
-        password, // In produzione: hash bcrypt
-        ruolo: ruolo || 'operatore',
-        privilegi: JSON.stringify(privilegi || []),
-      },
+    const hashedPassword = await hashPassword(password);
+    const nuovaCredenziale = {
+      username,
+      nome,
+      password: hashedPassword,
+      ruolo: ruolo || 'operatore',
+    };
+
+    const credenzialiAggiornate = [...credenziali, nuovaCredenziale];
+
+    await db.comune.update({
+      where: { id: comune.id },
+      data: { credenziali: JSON.stringify(credenzialiAggiornate) },
     });
 
-    const { password: _, ...accountSicuro } = nuovoAccount;
-    return NextResponse.json({ account: { ...accountSicuro, privilegi: JSON.parse(accountSicuro.privilegi || '[]') } }, { status: 201 });
+    const { password: _, ...accountSicuro } = nuovaCredenziale;
+    return NextResponse.json({
+      account: { ...accountSicuro, id: String(credenzialiAggiornate.length), attivo: true, privilegi: [] },
+    }, { status: 201 });
   } catch {
     return NextResponse.json(
       { errore: 'Errore nella creazione dell\'account' },
@@ -80,7 +99,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const corpo = await request.json();
-    const { id, attivo, privilegi, nome, email, telefono } = corpo;
+    const { id, nome, ruolo } = corpo;
 
     if (!id) {
       return NextResponse.json(
@@ -89,20 +108,37 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const datiAggiornamento: Record<string, unknown> = {};
-    if (attivo !== undefined) datiAggiornamento.attivo = attivo;
-    if (privilegi !== undefined) datiAggiornamento.privilegi = JSON.stringify(privilegi);
-    if (nome !== undefined) datiAggiornamento.nome = nome;
-    if (email !== undefined) datiAggiornamento.email = email;
-    if (telefono !== undefined) datiAggiornamento.telefono = telefono;
+    const comune = await db.comune.findFirst({ where: { attivo: true } });
+    if (!comune) {
+      return NextResponse.json(
+        { errore: 'Comune non configurato' },
+        { status: 404 }
+      );
+    }
 
-    const accountAggiornato = await db.accountAdmin.update({
-      where: { id },
-      data: datiAggiornamento,
+    const credenziali = parseCredenziali(comune.credenziali);
+    const idx = parseInt(id, 10) - 1;
+
+    if (idx < 0 || idx >= credenziali.length) {
+      return NextResponse.json(
+        { errore: 'Account non trovato' },
+        { status: 404 }
+      );
+    }
+
+    // Aggiorna i campi forniti
+    if (nome !== undefined) credenziali[idx].nome = nome;
+    if (ruolo !== undefined) credenziali[idx].ruolo = ruolo;
+
+    await db.comune.update({
+      where: { id: comune.id },
+      data: { credenziali: JSON.stringify(credenziali) },
     });
 
-    const { password: _, ...accountSicuro } = accountAggiornato;
-    return NextResponse.json({ account: { ...accountSicuro, privilegi: JSON.parse(accountSicuro.privilegi || '[]') } });
+    const { password: _, ...accountSicuro } = credenziali[idx];
+    return NextResponse.json({
+      account: { ...accountSicuro, id, attivo: true, privilegi: [] },
+    });
   } catch {
     return NextResponse.json(
       { errore: 'Errore nell\'aggiornamento dell\'account' },
@@ -124,16 +160,39 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Non permettere l'eliminazione di super_admin
-    const account = await db.accountAdmin.findUnique({ where: { id } });
-    if (account?.ruolo === 'super_admin') {
+    const comune = await db.comune.findFirst({ where: { attivo: true } });
+    if (!comune) {
       return NextResponse.json(
-        { errore: 'Impossibile eliminare un account Super Admin' },
+        { errore: 'Comune non configurato' },
+        { status: 404 }
+      );
+    }
+
+    const credenziali = parseCredenziali(comune.credenziali);
+    const idx = parseInt(id, 10) - 1;
+
+    if (idx < 0 || idx >= credenziali.length) {
+      return NextResponse.json(
+        { errore: 'Account non trovato' },
+        { status: 404 }
+      );
+    }
+
+    // Non permettere l'eliminazione dell'ultimo admin
+    if (credenziali.length <= 1) {
+      return NextResponse.json(
+        { errore: 'Impossibile eliminare l\'ultimo account' },
         { status: 403 }
       );
     }
 
-    await db.accountAdmin.delete({ where: { id } });
+    credenziali.splice(idx, 1);
+
+    await db.comune.update({
+      where: { id: comune.id },
+      data: { credenziali: JSON.stringify(credenziali) },
+    });
+
     return NextResponse.json({ successo: true });
   } catch {
     return NextResponse.json(

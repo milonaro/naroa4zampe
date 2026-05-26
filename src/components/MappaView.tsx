@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Filter, Loader2, Volume2, VolumeX, Crosshair, Radio, MapPin, Dog, ChevronDown, ChevronUp } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { NARO_LAT, NARO_LNG, COLORI_URGENZA_HEX, ETICHETTE_URGENZA, ETICHETTE_STATO, ETICHETTE_MOTIVAZIONE } from '@/lib/constants';
+import { COLORI_URGENZA_HEX, ETICHETTE_URGENZA, ETICHETTE_STATO, ETICHETTE_MOTIVAZIONE } from '@/lib/constants';
 
 // Interfaccia segnalazione
 interface Segnalazione {

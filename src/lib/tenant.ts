@@ -2,6 +2,8 @@
 // Centralizza tutti i parametri specifici del comune per rendere l'app riutilizzabile
 // Ogni deployment ha un solo record Comune nel DB
 
+import type { PrismaClient } from '@prisma/client';
+
 // ─── Interfaccia della configurazione del comune ────────────────────────────
 export interface ConfigComune {
   nomeComune: string;          // "Comune di Naro"
@@ -54,9 +56,7 @@ export const CREDENZIALI_DEFAULT: CredenzialeOperatore[] = [
 
 // ─── Funzione per caricare la config dal DB (server-side) ──────────────────
 // Chiamata dalle API routes per ottenere i dati del comune
-export async function getComuneConfig(db: {
-  comune: { findFirst: (args?: Record<string, unknown>) => Promise<ConfigComuneFromDB | null> };
-}): Promise<ConfigComune> {
+export async function getComuneConfig(db: PrismaClient): Promise<ConfigComune> {
   const comune = await db.comune.findFirst({ where: { attivo: true } });
   if (!comune) return CONFIG_DEFAULT;
 

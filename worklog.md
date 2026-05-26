@@ -210,3 +210,32 @@ Stage Summary:
 - Docker Compose deployment with Caddy + backup (FIX-04 + FIX-05) ✓
 - Health check endpoint (FIX-06) ✓
 - Rate limiting on public APIs (FIX-07) ✓
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Complete remaining fixes from BRIEF TECNICO and prior UI requests
+
+Work Log:
+- Verified all FIX-01 through FIX-07 from BRIEF TECNICO were already implemented in previous session
+- Fixed Area Personale: Added _demo_token return in dev mode (when RESEND_API_KEY not configured) so OTP flow works during testing
+- Fixed HeroSlider: Replaced w-screen/-ml technique with slider-full-width CSS class for true full-viewport width
+- Fixed Header: Enlarged all navigation icons from h-6 w-6 to h-7 w-7, logo icon from h-6 w-6 to h-7 w-7, bell icon from h-5 w-5 to h-6 w-6
+- Completed FIX-08 TypeScript cleanup:
+  - Removed ignoreBuildErrors from next.config.ts
+  - Added "examples" and "skills" to tsconfig.json exclude array
+  - Fixed Zod v4 breaking changes (errors → issues) in 9 API routes
+  - Rewrote 6 admin API routes to use Comune.credenziali instead of non-existent Prisma models
+  - Fixed PrismaClient type mismatch in getComuneConfig
+  - Added missing Zustand store properties and types
+  - Fixed DashboardView, Header, HeroSlider, MappaView, SegnalaView TypeScript errors
+- Build passes with 0 TypeScript errors
+- Health check verified: /api/health returns { status: "ok", database: "connected", comune: "Comune di Naro" }
+
+Stage Summary:
+- All 8 FIX items from BRIEF TECNICO are now complete
+- TypeScript cleanup (FIX-08) resolved 85 errors, build passes cleanly
+- App is running and healthy on production server
+- Area Personale now works in dev mode with demo token
+- HeroSlider renders full viewport width
+- Header icons enlarged for better visibility

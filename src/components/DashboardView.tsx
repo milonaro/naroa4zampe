@@ -579,9 +579,9 @@ export default function DashboardView() {
           >
             <Bell className="h-3.5 w-3.5 mr-1.5" />
             Notifiche
-            {datiNotifiche?.nonLette > 0 && (
+            {(datiNotifiche?.nonLette ?? 0) > 0 && (
               <Badge className="ml-1.5 h-5 min-w-[20px] p-0 flex items-center justify-center bg-red-600 text-white text-[10px] border-0">
-                {datiNotifiche.nonLette}
+                {datiNotifiche?.nonLette}
               </Badge>
             )}
           </TabsTrigger>
@@ -1142,12 +1142,12 @@ export default function DashboardView() {
                     </TooltipUI>
                   </TooltipProvider>
                 )}
-                {datiNotifiche?.nonLette > 0 && (
+                {(datiNotifiche?.nonLette ?? 0) > 0 && (
                   <Button
                     size="sm"
                     variant="outline"
                     className="border-yellow-200 text-yellow-700 hover:bg-yellow-50 text-xs"
-                    onClick={() => segnaNotificheLette.mutate()}
+                    onClick={() => segnaNotificheLette.mutate(undefined)}
                   >
                     <BellOff className="mr-1 h-3.5 w-3.5" />
                     Segna tutte come lette
@@ -1355,6 +1355,8 @@ function InserimentoManualeForm({
   onSubmit: (dati: Record<string, unknown>) => void;
   isPending: boolean;
 }) {
+  const configComune = useStore((s) => s.configComune);
+
   // Stato del form
   const [titolo, setTitolo] = useState('');
   const [descrizione, setDescrizione] = useState('');
@@ -1374,8 +1376,8 @@ function InserimentoManualeForm({
   const latNum = parseFloat(lat);
   const lngNum = parseFloat(lng);
   const hasCoords = !isNaN(latNum) && !isNaN(lngNum);
-  const raggioOperativo = hasCoords ? distanzaKm(NARO_LAT, NARO_LNG, latNum, lngNum) : null;
-  const isFuoriZona = raggioOperativo !== null ? raggioOperativo > RAGGIO_OPERATIVO_KM : null;
+  const raggioOperativo = hasCoords ? distanzaKm(configComune.latCentro, configComune.lngCentro, latNum, lngNum) : null;
+  const isFuoriZona = raggioOperativo !== null ? raggioOperativo > configComune.raggioKm : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

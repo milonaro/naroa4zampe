@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           errore: 'Dati non validi',
-          dettagli: errore.errors.map((e) => ({
+          dettagli: errore.issues.map((e) => ({
             campo: e.path.join('.'),
             messaggio: e.message,
           })),

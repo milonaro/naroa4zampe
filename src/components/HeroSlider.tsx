@@ -75,7 +75,7 @@ const slideVariants = {
 };
 
 const slideTransition = {
-  x: { type: 'spring', stiffness: 300, damping: 30 },
+  x: { type: 'spring' as const, stiffness: 300, damping: 30 },
   opacity: { duration: 0.3 },
 };
 
@@ -177,7 +177,7 @@ export default function HeroSlider() {
 
   return (
     <section
-      className="relative w-screen -ml-[calc((100vw-100%)/2)] h-[60vh] md:h-[75vh] lg:h-[85vh] overflow-hidden select-none"
+      className="relative slider-full-width h-[60vh] md:h-[75vh] lg:h-[85vh] overflow-hidden select-none"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       role="region"
@@ -224,7 +224,7 @@ export default function HeroSlider() {
           </div>
 
           {/* ── Content ─────────────────────────────────────────────────── */}
-          <div className="relative z-10 flex flex-col justify-center h-full px-6 md:px-16 lg:px-24 max-w-3xl">
+          <div className="relative z-10 flex flex-col justify-center h-full px-6 md:px-16 lg:px-24 xl:px-32 max-w-4xl">
             <h2 className="text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
               {slide.title}
             </h2>

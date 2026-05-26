@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const result = ricercaSchema.safeParse({ email, codiceFiscale });
     if (!result.success) {
       return NextResponse.json(
-        { errore: result.error.errors[0]?.message || 'Parametri di ricerca non validi' },
+        { errore: result.error.issues[0]?.message || 'Parametri di ricerca non validi' },
         { status: 400 }
       );
     }
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
   } catch (errore) {
     if (errore instanceof z.ZodError) {
       return NextResponse.json(
-        { errore: 'Dati non validi', dettagli: errore.errors },
+        { errore: 'Dati non validi', dettagli: errore.issues },
         { status: 400 }
       );
     }

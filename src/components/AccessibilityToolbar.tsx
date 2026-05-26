@@ -20,12 +20,12 @@ import {
 
 export default function AccessibilityToolbar() {
   const {
-    temaCorrente,
+    tema: temaCorrente,
     impostaTema,
     dimensioneTesto,
     impostaDimensioneTesto,
-    riduzioneMovimento,
-    impostaRiduzioneMovimento,
+    riduzioneAnimazioni: riduzioneMovimento,
+    impostaRiduzioneAnimazioni: impostaRiduzioneMovimento,
   } = useStore();
 
   const [aperto, setAperto] = useState(false);

@@ -1,10 +1,12 @@
 // API per la gestione di un singolo admin
 // PATCH: aggiorna ruolo/stato attivo (solo super_admin)
 // DELETE: disattiva admin (solo super_admin)
+// Utilizza il campo JSON credenziali del modello Comune
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { parseCredenziali } from '@/lib/tenant';
 
 // Schema validazione per aggiornamento admin
 const aggiornaAdminSchema = z.object({
@@ -13,9 +15,16 @@ const aggiornaAdminSchema = z.object({
   nome: z.string().min(2).optional(),
   email: z.string().email().optional().or(z.literal('')),
   telefono: z.string().optional(),
-  foto: z.string().optional(),
   ruoloRichiedente: z.string(), // per verifica permessi
 });
+
+// Helper: leggi e aggiorna credenziali nel record Comune
+async function getComuneAndCredenziali() {
+  const comune = await db.comune.findFirst({ where: { attivo: true } });
+  if (!comune) return null;
+  const credenziali = parseCredenziali(comune.credenziali);
+  return { comune, credenziali };
+}
 
 // PATCH - Aggiorna admin
 export async function PATCH(
@@ -35,41 +44,36 @@ export async function PATCH(
       );
     }
 
-    // Verifica che l'admin esista
-    const admin = await db.adminUtente.findUnique({ where: { id } });
-    if (!admin) {
+    const result = await getComuneAndCredenziali();
+    if (!result) {
+      return NextResponse.json({ errore: 'Comune non trovato' }, { status: 404 });
+    }
+
+    const { comune, credenziali } = result;
+    const idx = parseInt(id, 10) - 1;
+
+    if (idx < 0 || idx >= credenziali.length) {
       return NextResponse.json({ errore: 'Admin non trovato' }, { status: 404 });
     }
 
-    // Non permettere di disattivare l'ultimo super_admin
-    if (admin.ruolo === 'super_admin' && datiAggiornamento.attivo === false) {
-      const superAdminCount = await db.adminUtente.count({
-        where: { ruolo: 'super_admin', attivo: true },
-      });
-      if (superAdminCount <= 1) {
-        return NextResponse.json(
-          { errore: 'Impossibile disattivare l\'ultimo Super Admin' },
-          { status: 400 }
-        );
-      }
-    }
+    const admin = credenziali[idx];
 
-    const adminAggiornato = await db.adminUtente.update({
-      where: { id },
-      data: {
-        ...datiAggiornamento,
-        email: datiAggiornamento.email || undefined,
-        telefono: datiAggiornamento.telefono || undefined,
-        foto: datiAggiornamento.foto || undefined,
-      },
+    // Aggiorna i campi forniti
+    if (datiAggiornamento.ruolo !== undefined) admin.ruolo = datiAggiornamento.ruolo;
+    if (datiAggiornamento.nome !== undefined) admin.nome = datiAggiornamento.nome;
+
+    // Salva nel campo JSON del Comune
+    await db.comune.update({
+      where: { id: comune.id },
+      data: { credenziali: JSON.stringify(credenziali) },
     });
 
-    const { password: _, ...adminSenzaPassword } = adminAggiornato;
-    return NextResponse.json(adminSenzaPassword);
+    const { password: _, ...adminSenzaPassword } = admin;
+    return NextResponse.json({ ...adminSenzaPassword, id });
   } catch (errore) {
     if (errore instanceof z.ZodError) {
       return NextResponse.json(
-        { errore: 'Dati non validi', dettagli: errore.errors },
+        { errore: 'Dati non validi', dettagli: errore.issues },
         { status: 400 }
       );
     }
@@ -78,7 +82,7 @@ export async function PATCH(
   }
 }
 
-// DELETE - Disattiva admin
+// DELETE - Rimuovi admin (rimuove la credenziale dal JSON)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -95,19 +99,36 @@ export async function DELETE(
       );
     }
 
-    const admin = await db.adminUtente.findUnique({ where: { id } });
-    if (!admin) {
+    const result = await getComuneAndCredenziali();
+    if (!result) {
+      return NextResponse.json({ errore: 'Comune non trovato' }, { status: 404 });
+    }
+
+    const { comune, credenziali } = result;
+    const idx = parseInt(id, 10) - 1;
+
+    if (idx < 0 || idx >= credenziali.length) {
       return NextResponse.json({ errore: 'Admin non trovato' }, { status: 404 });
     }
 
-    // Imposta attivo = false invece di eliminare
-    const adminDisattivato = await db.adminUtente.update({
-      where: { id },
-      data: { attivo: false },
+    // Non permettere di eliminare l'ultimo admin
+    if (credenziali.length <= 1) {
+      return NextResponse.json(
+        { errore: 'Impossibile eliminare l\'ultimo operatore' },
+        { status: 400 }
+      );
+    }
+
+    const adminRimosso = credenziali.splice(idx, 1)[0];
+
+    // Salva nel campo JSON del Comune
+    await db.comune.update({
+      where: { id: comune.id },
+      data: { credenziali: JSON.stringify(credenziali) },
     });
 
-    const { password: _, ...adminSenzaPassword } = adminDisattivato;
-    return NextResponse.json(adminSenzaPassword);
+    const { password: _, ...adminSenzaPassword } = adminRimosso;
+    return NextResponse.json({ ...adminSenzaPassword, id });
   } catch (errore) {
     console.error('Errore nella disattivazione admin:', errore);
     return NextResponse.json({ errore: 'Errore nella disattivazione' }, { status: 500 });

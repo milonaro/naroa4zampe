@@ -51,8 +51,8 @@ const MappaSegnalaLeaflet = dynamic(() => import('./MappaSegnalaLeaflet'), {
 const segnalazioneSchema = z.object({
   titolo: z.string().min(3, 'Il titolo deve avere almeno 3 caratteri'),
   descrizione: z.string().min(10, 'La descrizione deve avere almeno 10 caratteri'),
-  latitudine: z.number({ required_error: 'Seleziona un punto sulla mappa' }).min(-90).max(90),
-  longitudine: z.number({ required_error: 'Seleziona un punto sulla mappa' }).min(-180).max(180),
+  latitudine: z.number({ message: 'Seleziona un punto sulla mappa' }).min(-90).max(90),
+  longitudine: z.number({ message: 'Seleziona un punto sulla mappa' }).min(-180).max(180),
   indirizzo: z.string().optional(),
   razza: z.string().optional(),
   colore: z.string().optional(),
@@ -64,8 +64,8 @@ const segnalazioneSchema = z.object({
   cognomeSegnalatore: z.string().min(2, 'Il cognome deve avere almeno 2 caratteri'),
   emailSegnalatore: z.string().email('Inserisci un indirizzo email valido'),
   telefonoSegnalatore: z.string().min(1, 'Il telefono è obbligatorio'),
-  consensoPrivacy: z.literal(true, { errorMap: () => ({ message: 'Devi accettare l\'informativa sulla privacy' }) }),
-  consensoDichiarazione: z.literal(true, { errorMap: () => ({ message: 'Devi accettare la dichiarazione di responsabilità' }) }),
+  consensoPrivacy: z.literal(true, { message: 'Devi accettare l\'informativa sulla privacy' }),
+  consensoDichiarazione: z.literal(true, { message: 'Devi accettare la dichiarazione di responsabilità' }),
 });
 
 type DatiSegnalazione = z.infer<typeof segnalazioneSchema>;
@@ -99,7 +99,7 @@ export default function SegnalaView() {
     formState: { errors },
     reset,
   } = useForm<DatiSegnalazione>({
-    resolver: zodResolver(segnalazioneSchema),
+    resolver: zodResolver(segnalazioneSchema) as any,
     defaultValues: {
       tipoAnimale: 'cane',
       motivazione: 'randagismo',
@@ -308,7 +308,7 @@ export default function SegnalaView() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-6">
+      <form onSubmit={handleSubmit(onSubmit as any)} className="mt-6">
         <AnimatePresence mode="wait" custom={direzione}>
           {/* ═══════════ STEP 1: POSIZIONE ═══════════ */}
           {stepCorrente === 1 && (

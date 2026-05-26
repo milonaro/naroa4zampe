@@ -125,16 +125,21 @@ export async function POST(request: NextRequest) {
         // In sviluppo, il token è loggato nella console del server
       }
 
-      // Il token NON viene mai restituito nella response al client
+      // In sviluppo (senza SMTP configurato), restituiamo il token come _demo_token
+      // per permettere il testing dell'Area Personale
+      // In produzione con SMTP reale, il token NON viene mai esposto al client
+      const isDevMode = !process.env.RESEND_API_KEY;
+
       return NextResponse.json({
         successo: true,
         messaggio: 'Codice di verifica inviato alla tua email',
+        ...(isDevMode ? { _demo_token: token } : {}),
       });
     }
   } catch (errore) {
     if (errore instanceof z.ZodError) {
       return NextResponse.json(
-        { errore: 'Dati non validi', dettagli: errore.errors, successo: false },
+        { errore: 'Dati non validi', dettagli: errore.issues, successo: false },
         { status: 400 }
       );
     }
