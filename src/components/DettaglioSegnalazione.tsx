@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useStore } from '@/lib/store';
+import { getGDPRComune } from '@/lib/tenant';
 
 // Interfaccia per il log delle modifiche
 interface LogModifica {
@@ -125,8 +126,15 @@ const etichetteTipoAnimale: Record<string, string> = {
   altro: 'Altro 🐾',
 };
 
+const etichetteTaglia: Record<string, string> = {
+  piccola: 'Piccola',
+  media: 'Media',
+  grande: 'Grande',
+  molto_grande: 'Molto grande',
+};
+
 const coloriMotivazione: Record<string, string> = {
-  randagismo: 'bg-amber-100 text-amber-800',
+  randagismo: 'bg-yellow-100 text-yellow-800',
   abbandono: 'bg-red-100 text-red-800',
   maltrattamento: 'bg-purple-100 text-purple-800',
   smarrimento: 'bg-sky-100 text-sky-800',
@@ -135,7 +143,7 @@ const coloriMotivazione: Record<string, string> = {
 };
 
 const coloriTipoAnimale: Record<string, string> = {
-  cane: 'bg-orange-100 text-orange-800',
+  cane: 'bg-yellow-100 text-yellow-800',
   gatto: 'bg-indigo-100 text-indigo-800',
   altro: 'bg-slate-100 text-slate-800',
 };
@@ -150,7 +158,7 @@ const coloriUrgenza: Record<string, string> = {
 
 const coloriStato: Record<string, string> = {
   ricevuta: 'bg-sky-100 text-sky-800',
-  in_lavorazione: 'bg-amber-100 text-amber-800',
+  in_lavorazione: 'bg-yellow-100 text-yellow-800',
   risolta: 'bg-emerald-100 text-emerald-800',
   archiviata: 'bg-gray-100 text-gray-800',
 };
@@ -174,7 +182,7 @@ interface SegnalazioneSimile {
 }
 
 export default function DettaglioSegnalazione() {
-  const { segnalazioneSelezionata, selezionaSegnalazione, adminAutenticato } = useStore();
+  const { segnalazioneSelezionata, selezionaSegnalazione, adminAutenticato, configComune } = useStore();
   const queryClient = useQueryClient();
   const [similiEspanso, setSimiliEspanso] = useState(false);
 
@@ -246,30 +254,30 @@ export default function DettaglioSegnalazione() {
         <title>Segnalazione - ${segnalazione.titolo}</title>
         <style>
           body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px 30px; color: #333; }
-          .header { text-align: center; border-bottom: 3px solid #d97706; padding-bottom: 20px; margin-bottom: 25px; }
-          .header h1 { color: #92400e; margin: 0; font-size: 24px; }
-          .header p { color: #b45309; margin: 5px 0 0; font-size: 14px; }
+          .header { text-align: center; border-bottom: 3px solid #ca8a04; padding-bottom: 20px; margin-bottom: 25px; }
+          .header h1 { color: #854d0e; margin: 0; font-size: 24px; }
+          .header p { color: #a16207; margin: 5px 0 0; font-size: 14px; }
           .section { margin-bottom: 20px; }
-          .section h2 { color: #92400e; font-size: 16px; border-bottom: 1px solid #fbbf24; padding-bottom: 5px; margin-bottom: 10px; }
+          .section h2 { color: #854d0e; font-size: 16px; border-bottom: 1px solid #facc15; padding-bottom: 5px; margin-bottom: 10px; }
           .field { margin-bottom: 8px; }
-          .field .label { font-weight: 600; color: #78350f; font-size: 13px; }
+          .field .label { font-weight: 600; color: #713f12; font-size: 13px; }
           .field .value { font-size: 14px; margin-top: 2px; }
           .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
           .badge-urg-${segnalazione.urgenza} { background: ${segnalazione.urgenza === 'critica' ? '#fecaca' : segnalazione.urgenza === 'alta' ? '#fed7aa' : segnalazione.urgenza === 'media' ? '#fef08a' : '#bbf7d0'}; color: ${segnalazione.urgenza === 'critica' ? '#991b1b' : segnalazione.urgenza === 'alta' ? '#9a3412' : segnalazione.urgenza === 'media' ? '#854d0e' : '#166534'}; }
           .badge-stato { background: #e0f2fe; color: #075985; }
           .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
-          .card { background: #fffbeb; padding: 10px; border-radius: 6px; text-align: center; }
-          .card .label { font-size: 11px; color: #92400e; }
-          .card .value { font-size: 14px; font-weight: 600; color: #78350f; }
+          .card { background: #fefce8; padding: 10px; border-radius: 6px; text-align: center; }
+          .card .label { font-size: 11px; color: #854d0e; }
+          .card .value { font-size: 14px; font-weight: 600; color: #713f12; }
           .log-item { padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
-          .footer { margin-top: 30px; padding-top: 15px; border-top: 2px solid #fbbf24; text-align: center; font-size: 12px; color: #9ca3af; }
+          .footer { margin-top: 30px; padding-top: 15px; border-top: 2px solid #facc15; text-align: center; font-size: 12px; color: #9ca3af; }
           @media print { body { padding: 20px; } }
         </style>
       </head>
       <body>
         <div class="header">
-          <h1>Naro a 4 Zampe</h1>
-          <p>Segnalazione Animali Randagi - Comune di Naro</p>
+          <h1>{configComune.nomeApp}</h1>
+          <p>Segnalazione Animali Randagi - {configComune.nomeComune}</p>
         </div>
 
         <div class="section">
@@ -332,7 +340,7 @@ export default function DettaglioSegnalazione() {
         ` : ''}
 
         <div class="footer">
-          Documento generato il ${dataGenerazione} da Naro a 4 Zampe — Comune di Naro
+          Documento generato il ${dataGenerazione} da ${configComune.nomeApp} — ${configComune.nomeComune}
         </div>
       </body>
       </html>
@@ -352,7 +360,7 @@ export default function DettaglioSegnalazione() {
       `Posizione: ${segnalazione.latitudine.toFixed(4)}, ${segnalazione.longitudine.toFixed(4)}\n` +
       `${segnalazione.indirizzo ? 'Indirizzo: ' + segnalazione.indirizzo + '\n' : ''}` +
       `Descrizione: ${segnalazione.descrizione}\n` +
-      `— Naro a 4 Zampe`;
+      `— ${configComune.nomeApp}`;
 
     if (navigator.share) {
       try {
@@ -380,13 +388,13 @@ export default function DettaglioSegnalazione() {
     >
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-amber-800 flex items-center gap-2">
+          <DialogTitle className="text-yellow-800 flex items-center gap-2">
             {segnalazione ? (
               <>
                 {segnalazione.urgenza === 'critica' || segnalazione.urgenza === 'alta' ? (
                   <AlertTriangle className="h-5 w-5 text-red-500" />
                 ) : (
-                  <FileText className="h-5 w-5 text-amber-600" />
+                  <FileText className="h-5 w-5 text-yellow-600" />
                 )}
                 {segnalazione.titolo}
               </>
@@ -401,7 +409,7 @@ export default function DettaglioSegnalazione() {
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin h-8 w-8 border-4 border-amber-500 border-t-transparent rounded-full" />
+            <div className="animate-spin h-8 w-8 border-4 border-yellow-500 border-t-transparent rounded-full" />
           </div>
         ) : segnalazione ? (
           <div className="space-y-4">
@@ -433,7 +441,7 @@ export default function DettaglioSegnalazione() {
                 variant="outline"
                 size="sm"
                 onClick={generaPDF}
-                className="text-amber-700 border-amber-200 hover:bg-amber-50 gap-1.5"
+                className="text-yellow-700 border-yellow-200 hover:bg-yellow-50 gap-1.5"
               >
                 <Download className="h-4 w-4" />
                 Scarica PDF
@@ -442,7 +450,7 @@ export default function DettaglioSegnalazione() {
                 variant="outline"
                 size="sm"
                 onClick={condividi}
-                className="text-amber-700 border-amber-200 hover:bg-amber-50 gap-1.5"
+                className="text-yellow-700 border-yellow-200 hover:bg-yellow-50 gap-1.5"
               >
                 <Share2 className="h-4 w-4" />
                 Condividi
@@ -451,7 +459,7 @@ export default function DettaglioSegnalazione() {
 
             {/* Foto o placeholder */}
             {segnalazione.fotoUrl ? (
-              <div className="rounded-lg overflow-hidden border border-amber-200">
+              <div className="rounded-lg overflow-hidden border border-yellow-200">
                 <img
                   src={segnalazione.fotoUrl}
                   alt="Foto dell'animale segnalato"
@@ -459,47 +467,47 @@ export default function DettaglioSegnalazione() {
                 />
               </div>
             ) : (
-              <div className="rounded-lg overflow-hidden border border-amber-200 bg-amber-50 flex items-center justify-center h-48">
+              <div className="rounded-lg overflow-hidden border border-yellow-200 bg-yellow-50 flex items-center justify-center h-48">
                 <div className="text-center">
                   <img src="/images/placeholder-animal.jpg" alt="Placeholder" className="h-32 w-32 object-cover rounded-lg mx-auto opacity-60" />
-                  <p className="text-xs text-amber-500 mt-2">Nessuna foto disponibile</p>
+                  <p className="text-xs text-yellow-500 mt-2">Nessuna foto disponibile</p>
                 </div>
               </div>
             )}
 
             {/* Descrizione */}
             <div className="space-y-1.5">
-              <h4 className="text-sm font-medium text-amber-700">Descrizione</h4>
-              <p className="text-sm text-amber-900 bg-amber-50/50 p-3 rounded-lg">
+              <h4 className="text-sm font-medium text-yellow-700">Descrizione</h4>
+              <p className="text-sm text-yellow-900 bg-yellow-50/50 p-3 rounded-lg">
                 {segnalazione.descrizione}
               </p>
             </div>
 
-            <Separator className="bg-amber-100" />
+            <Separator className="bg-yellow-100" />
 
             {/* Dettagli Segnalazione */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-amber-700 flex items-center gap-1.5">
+              <h4 className="text-sm font-medium text-yellow-700 flex items-center gap-1.5">
                 <ClipboardList className="h-4 w-4" />
                 Dettagli Segnalazione
               </h4>
               <div className="grid grid-cols-3 gap-3">
                 {segnalazione.razza && (
-                  <div className="bg-amber-50 p-2 rounded-lg text-center">
-                    <p className="text-xs text-amber-500">Razza/Tipo</p>
-                    <p className="text-sm font-medium text-amber-800">{segnalazione.razza}</p>
+                  <div className="bg-yellow-50 p-2 rounded-lg text-center">
+                    <p className="text-xs text-yellow-500">Razza/Tipo</p>
+                    <p className="text-sm font-medium text-yellow-800">{segnalazione.razza}</p>
                   </div>
                 )}
                 {segnalazione.colore && (
-                  <div className="bg-amber-50 p-2 rounded-lg text-center">
-                    <p className="text-xs text-amber-500">Colore</p>
-                    <p className="text-sm font-medium text-amber-800">{segnalazione.colore}</p>
+                  <div className="bg-yellow-50 p-2 rounded-lg text-center">
+                    <p className="text-xs text-yellow-500">Colore</p>
+                    <p className="text-sm font-medium text-yellow-800">{segnalazione.colore}</p>
                   </div>
                 )}
                 {segnalazione.taglia && (
-                  <div className="bg-amber-50 p-2 rounded-lg text-center">
-                    <p className="text-xs text-amber-500">Taglia</p>
-                    <p className="text-sm font-medium text-amber-800">
+                  <div className="bg-yellow-50 p-2 rounded-lg text-center">
+                    <p className="text-xs text-yellow-500">Taglia</p>
+                    <p className="text-sm font-medium text-yellow-800">
                       {etichetteTaglia[segnalazione.taglia] || segnalazione.taglia}
                     </p>
                   </div>
@@ -507,43 +515,43 @@ export default function DettaglioSegnalazione() {
               </div>
             </div>
 
-            <Separator className="bg-amber-100" />
+            <Separator className="bg-yellow-100" />
 
             {/* Posizione */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-amber-700 flex items-center gap-1.5">
+              <h4 className="text-sm font-medium text-yellow-700 flex items-center gap-1.5">
                 <MapPin className="h-4 w-4" />
                 Posizione
               </h4>
-              <div className="bg-amber-50 p-3 rounded-lg space-y-1">
+              <div className="bg-yellow-50 p-3 rounded-lg space-y-1">
                 {segnalazione.indirizzo && (
-                  <p className="text-sm text-amber-800">{segnalazione.indirizzo}</p>
+                  <p className="text-sm text-yellow-800">{segnalazione.indirizzo}</p>
                 )}
-                <p className="text-xs text-amber-600">
+                <p className="text-xs text-yellow-600">
                   Coordinate: {segnalazione.latitudine.toFixed(4)}, {segnalazione.longitudine.toFixed(4)}
                 </p>
                 {segnalazione.raggioOperativo != null && (
-                  <p className="text-xs text-amber-600">
+                  <p className="text-xs text-yellow-600">
                     Distanza dal centro: {segnalazione.raggioOperativo.toFixed(1)} km
                   </p>
                 )}
               </div>
             </div>
 
-            <Separator className="bg-amber-100" />
+            <Separator className="bg-yellow-100" />
 
             {/* Dati segnalatore - visibili solo agli admin */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-amber-700 flex items-center gap-1.5">
+              <h4 className="text-sm font-medium text-yellow-700 flex items-center gap-1.5">
                 <User className="h-4 w-4" />
                 Segnalatore
               </h4>
               {adminAutenticato ? (
-                <div className="bg-amber-50 p-3 rounded-lg space-y-1.5">
-                  <p className="text-sm text-amber-800">
+                <div className="bg-yellow-50 p-3 rounded-lg space-y-1.5">
+                  <p className="text-sm text-yellow-800">
                     {segnalazione.nomeSegnalatore} {segnalazione.cognomeSegnalatore}
                   </p>
-                  <div className="flex flex-wrap gap-3 text-xs text-amber-600">
+                  <div className="flex flex-wrap gap-3 text-xs text-yellow-600">
                     <span className="flex items-center gap-1">
                       <Mail className="h-3 w-3" />
                       {segnalazione.emailSegnalatore}
@@ -570,15 +578,15 @@ export default function DettaglioSegnalazione() {
               )}
             </div>
 
-            <Separator className="bg-amber-100" />
+            <Separator className="bg-yellow-100" />
 
             {/* Sezione Dichiarazione e Privacy */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-amber-700 flex items-center gap-1.5">
+              <h4 className="text-sm font-medium text-yellow-700 flex items-center gap-1.5">
                 <Shield className="h-4 w-4" />
                 Dichiarazione e Privacy
               </h4>
-              <div className="bg-amber-50 p-3 rounded-lg space-y-2">
+              <div className="bg-yellow-50 p-3 rounded-lg space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   {segnalazione.consensoPrivacy ? (
                     <CheckCircle className="h-4 w-4 text-green-600" />
@@ -600,7 +608,7 @@ export default function DettaglioSegnalazione() {
                   </span>
                 </div>
                 {adminAutenticato && segnalazione.dataConsenso && (
-                  <div className="flex items-center gap-2 text-xs text-amber-600 pt-1 border-t border-amber-200 mt-2">
+                  <div className="flex items-center gap-2 text-xs text-yellow-600 pt-1 border-t border-yellow-200 mt-2">
                     <Calendar className="h-3 w-3" />
                     Data consenso: {new Date(segnalazione.dataConsenso).toLocaleDateString('it-IT', {
                       day: 'numeric',
@@ -617,25 +625,25 @@ export default function DettaglioSegnalazione() {
             {/* Log Modifiche - visibile solo agli admin */}
             {adminAutenticato && segnalazione.logModifiche && segnalazione.logModifiche.length > 0 && (
               <>
-                <Separator className="bg-amber-100" />
+                <Separator className="bg-yellow-100" />
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-amber-700 flex items-center gap-1.5">
+                  <h4 className="text-sm font-medium text-yellow-700 flex items-center gap-1.5">
                     <History className="h-4 w-4" />
                     Log Modifiche
                   </h4>
                   <div className="relative pl-4">
                     {/* Linea verticale della timeline */}
-                    <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-amber-200" />
+                    <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-yellow-200" />
                     <div className="space-y-3">
                       {segnalazione.logModifiche.map((log, indice) => (
                         <div key={log.id} className="relative flex items-start gap-3">
                           {/* Punto della timeline */}
-                          <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 border-amber-400 bg-white z-10 mt-0.5 ${
-                            indice === 0 ? 'bg-amber-400' : ''
+                          <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 border-yellow-400 bg-white z-10 mt-0.5 ${
+                            indice === 0 ? 'bg-yellow-400' : ''
                           }`} />
                           {/* Contenuto del log */}
                           <div className="flex-1 min-w-0 pb-1">
-                            <div className="text-xs text-amber-500 mb-0.5">
+                            <div className="text-xs text-yellow-500 mb-0.5">
                               {new Date(log.createdAt).toLocaleDateString('it-IT', {
                                 day: 'numeric',
                                 month: 'short',
@@ -644,14 +652,14 @@ export default function DettaglioSegnalazione() {
                                 minute: '2-digit',
                               })}
                             </div>
-                            <div className="text-sm text-amber-800">
+                            <div className="text-sm text-yellow-800">
                               <span className="font-medium">{etichetteCampo[log.campoModificato] || log.campoModificato}</span>
                               {' — '}
-                              <span className="text-amber-600 line-through">{etichetteStato[log.valorePrecedente] || log.valorePrecedente}</span>
+                              <span className="text-yellow-600 line-through">{etichetteStato[log.valorePrecedente] || log.valorePrecedente}</span>
                               {' → '}
                               <span className="text-green-700 font-medium">{etichetteStato[log.valoreNuovo] || log.valoreNuovo}</span>
                             </div>
-                            <div className="text-xs text-amber-400 mt-0.5">
+                            <div className="text-xs text-yellow-400 mt-0.5">
                               da {log.modificatoDa}
                             </div>
                           </div>
@@ -663,10 +671,10 @@ export default function DettaglioSegnalazione() {
               </>
             )}
 
-            <Separator className="bg-amber-100" />
+            <Separator className="bg-yellow-100" />
 
             {/* Date */}
-            <div className="flex flex-wrap gap-4 text-xs text-amber-600">
+            <div className="flex flex-wrap gap-4 text-xs text-yellow-600">
               <span className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 Creata: {new Date(segnalazione.createdAt).toLocaleDateString('it-IT', {
@@ -692,10 +700,10 @@ export default function DettaglioSegnalazione() {
             {/* ─── Segnalazioni Simili ──────────────────────────────────── */}
             {datiSimili && datiSimili.simili.length > 0 && (
               <>
-                <Separator className="bg-amber-100" />
+                <Separator className="bg-yellow-100" />
                 <div className="space-y-2">
                   <button
-                    className="w-full flex items-center justify-between text-sm font-medium text-amber-700 hover:text-amber-900 transition-colors"
+                    className="w-full flex items-center justify-between text-sm font-medium text-yellow-700 hover:text-yellow-900 transition-colors"
                     onClick={() => setSimiliEspanso(!similiEspanso)}
                   >
                     <span className="flex items-center gap-1.5">
@@ -718,7 +726,7 @@ export default function DettaglioSegnalazione() {
                       </p>
                       {caricamentoSimili ? (
                         <div className="flex items-center justify-center py-4">
-                          <div className="animate-spin h-6 w-6 border-3 border-amber-500 border-t-transparent rounded-full" />
+                          <div className="animate-spin h-6 w-6 border-3 border-yellow-500 border-t-transparent rounded-full" />
                         </div>
                       ) : (
                         datiSimili.simili.map((sim) => (
@@ -748,7 +756,7 @@ export default function DettaglioSegnalazione() {
                               </span>
                               <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
                                 sim.stato === 'risolta' ? 'bg-emerald-100 text-emerald-800' :
-                                sim.stato === 'in_lavorazione' ? 'bg-amber-100 text-amber-800' :
+                                sim.stato === 'in_lavorazione' ? 'bg-yellow-100 text-yellow-800' :
                                 sim.stato === 'archiviata' ? 'bg-gray-100 text-gray-800' :
                                 'bg-sky-100 text-sky-800'
                               }`}>
@@ -770,7 +778,7 @@ export default function DettaglioSegnalazione() {
             {/* Azioni - solo admin può cambiare stato */}
             {adminAutenticato && (
               <div className="flex items-center gap-3 pt-2">
-                <span className="text-sm font-medium text-amber-700 flex items-center gap-1">
+                <span className="text-sm font-medium text-yellow-700 flex items-center gap-1">
                   <CheckCircle className="h-4 w-4" />
                   Cambia stato:
                 </span>
@@ -783,7 +791,7 @@ export default function DettaglioSegnalazione() {
                     });
                   }}
                 >
-                  <SelectTrigger className="w-[160px] border-amber-200">
+                  <SelectTrigger className="w-[160px] border-yellow-200">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -797,7 +805,7 @@ export default function DettaglioSegnalazione() {
             )}
           </div>
         ) : (
-          <div className="text-center py-8 text-amber-500">
+          <div className="text-center py-8 text-yellow-500">
             Segnalazione non trovata
           </div>
         )}

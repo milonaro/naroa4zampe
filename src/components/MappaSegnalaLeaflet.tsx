@@ -8,17 +8,18 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
-// Caricamento dinamico del CSS di Leaflet
+// Caricamento dinamico del CSS di Leaflet (solo una volta)
 if (typeof window !== 'undefined') {
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-  document.head.appendChild(link);
+  const existingLink = document.querySelector('link[href*="leaflet"]');
+  if (!existingLink) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+  }
 }
 
-// Coordinate di Naro, Sicilia
-const NARO_LAT = 37.2964;
-const NARO_LNG = 13.7764;
+import { useStore } from '@/lib/store';
 
 // Fix per le icone predefinite di Leaflet
 const iconaPredefinita = L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown };
@@ -73,13 +74,14 @@ interface PropsMappaSegnala {
 
 // Componente mappa per il form di segnalazione
 export default function MappaSegnalaLeaflet({ posizione, onClickMappa }: PropsMappaSegnala) {
+  const configComune = useStore((s) => s.configComune);
   return (
     <div className="relative w-full h-64 rounded-lg overflow-hidden">
       {/* Overlay GPS info */}
       <div className="absolute top-2 left-2 z-[1000] bg-white/80 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-mono text-amber-700">
         <div className="flex items-center gap-1">
           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-          <span>GPS TRACK</span>
+          <span>Posizione</span>
         </div>
         {posizione && (
           <div className="text-[9px] text-gray-500 mt-0.5">
@@ -91,7 +93,7 @@ export default function MappaSegnalaLeaflet({ posizione, onClickMappa }: PropsMa
       {!posizione && (
         <div className="absolute inset-0 z-[999] flex items-center justify-center pointer-events-none">
           <div className="bg-white/80 backdrop-blur-sm px-3 py-2 rounded-lg">
-            <div className="text-amber-700 text-xs font-mono flex items-center gap-1.5">
+            <div className="text-amber-700 text-xs flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               Clicca per posizionare il marker
             </div>
@@ -100,7 +102,7 @@ export default function MappaSegnalaLeaflet({ posizione, onClickMappa }: PropsMa
       )}
 
       <MapContainer
-        center={[NARO_LAT, NARO_LNG]}
+        center={[configComune.latCentro, configComune.lngCentro]}
         zoom={14}
         className="h-full w-full z-0"
         scrollWheelZoom={true}

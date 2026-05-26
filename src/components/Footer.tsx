@@ -1,5 +1,6 @@
 // Componente Footer professionale
 // Include link per Accesso Operatori e Dashboard
+// Branding dinamico dal config del comune
 
 'use client';
 
@@ -8,18 +9,18 @@ import { PawPrint, Lock, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Footer() {
-  const { adminAutenticato, impostaVista } = useStore();
+  const { adminAutenticato, impostaVista, configComune } = useStore();
 
   return (
-    <footer className="border-t border-amber-100/60 bg-white/80 backdrop-blur-sm py-4">
+    <footer className="border-t border-yellow-100/60 bg-white/80 backdrop-blur-sm py-4">
       <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-amber-400">
+        <div className="flex items-center gap-2 text-yellow-400">
           <PawPrint className="h-4 w-4" />
-          <span className="text-sm font-medium text-amber-600">
-            Naro a 4 Zampe
+          <span className="text-sm font-medium text-yellow-600">
+            {configComune.nomeApp}
           </span>
-          <span className="text-xs text-amber-400 ml-2">
-            &copy; {new Date().getFullYear()} Comune di Naro
+          <span className="text-xs text-yellow-400 ml-2">
+            &copy; {new Date().getFullYear()} {configComune.nomeComune}
           </span>
         </div>
 
@@ -28,7 +29,7 @@ export default function Footer() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-amber-500 hover:text-amber-700 hover:bg-amber-50 gap-1.5 text-xs"
+              className="text-yellow-500 hover:text-yellow-700 hover:bg-yellow-50 gap-1.5 text-xs"
               onClick={() => impostaVista('dashboard')}
             >
               <Lock className="h-3.5 w-3.5" />
@@ -39,7 +40,7 @@ export default function Footer() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-amber-500 hover:text-amber-700 hover:bg-amber-50 gap-1.5 text-xs"
+              className="text-yellow-500 hover:text-yellow-700 hover:bg-yellow-50 gap-1.5 text-xs"
               onClick={() => impostaVista('dashboard')}
             >
               <Shield className="h-3.5 w-3.5" />

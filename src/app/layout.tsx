@@ -12,12 +12,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Metadati dell'applicazione Naro a 4 Zampe
+// Metadati di default — vengono sovrascritti lato client dal configComune
+// Il server non può accedere al DB per generare metadata dinamici in static mode
 export const metadata: Metadata = {
-  title: "Naro a 4 Zampe - Segnalazione Animali Randagi",
-  description: "Applicazione del Comune di Naro per la segnalazione e gestione di animali randagi. Segnala avvistamenti e aiuta la comunità.",
-  keywords: ["Naro", "Naro a 4 Zampe", "animali randagi", "segnalazione", "Comune di Naro", "Sicilia", "randagismo"],
-  authors: [{ name: "Comune di Naro" }],
+  title: "a 4 Zampe - Segnalazione Animali Randagi",
+  description: "Applicazione per la segnalazione e gestione di animali randagi nel territorio comunale. Segnala avvistamenti e aiuta la comunità.",
+  keywords: ["animali randagi", "segnalazione", "comune", "randagismo", "a 4 Zampe"],
   icons: {
     icon: "/logo.svg",
   },

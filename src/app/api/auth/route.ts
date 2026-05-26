@@ -1,8 +1,11 @@
 // API per l'autenticazione degli amministratori
 // POST: verifica credenziali e restituisce risultato
+// Le credenziali sono lette dal record Comune nel database (campo JSON)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { db } from '@/lib/db';
+import { parseCredenziali, CREDENZIALI_DEFAULT } from '@/lib/tenant';
 
 // Schema di validazione per il login
 const loginSchema = z.object({
@@ -10,20 +13,23 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password obbligatoria'),
 });
 
-// Credenziali admin (in produzione: hash bcrypt + DB)
-const ADMIN_CREDENTIALS = [
-  { username: 'admin', password: 'Naro2024!', nome: 'Amministratore', ruolo: 'amministratore' },
-  { username: 'polizia', password: 'NaroRandagio24', nome: 'Polizia Municipale', ruolo: 'polizia' },
-  { username: 'ufficio', password: 'CaninaNaro!', nome: 'Ufficio Animali', ruolo: 'ufficio' },
-  { username: 'dogvillage', password: 'DOGVillage24!', nome: 'DOG Village', ruolo: 'canile' },
-];
-
 export async function POST(request: NextRequest) {
   try {
     const corpo = await request.json();
     const datiValidati = loginSchema.parse(corpo);
 
-    const utente = ADMIN_CREDENTIALS.find(
+    // Carica credenziali dal database (campo JSON del Comune)
+    let credenziali = CREDENZIALI_DEFAULT;
+    try {
+      const comune = await db.comune.findFirst({ where: { attivo: true } });
+      if (comune?.credenziali) {
+        credenziali = parseCredenziali(comune.credenziali);
+      }
+    } catch {
+      // Fallback alle credenziali di default
+    }
+
+    const utente = credenziali.find(
       (cred) =>
         cred.username === datiValidati.username &&
         cred.password === datiValidati.password

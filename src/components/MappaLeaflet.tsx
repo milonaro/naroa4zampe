@@ -1,5 +1,5 @@
-// Componente MappaLeaflet - Mappa tattica con HUD da command console
-// Tactical Recon HUD per la localizzazione di animali randagi a Naro
+// Componente MappaLeaflet - Mappa interattiva per la localizzazione di animali randagi a Naro
+// Tema civico caldo e moderno — arenario
 // Importazione dinamica per evitare errori SSR
 
 'use client';
@@ -7,18 +7,19 @@
 import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import { COLORI_URGENZA_HEX, ETICHETTE_URGENZA, ETICHETTE_STATO } from '@/lib/constants';
+import { useStore } from '@/lib/store';
 
-// Caricamento dinamico del CSS di Leaflet
+// Caricamento dinamico del CSS di Leaflet (solo una volta)
 if (typeof window !== 'undefined') {
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-  document.head.appendChild(link);
+  const existingLink = document.querySelector('link[href*="leaflet"]');
+  if (!existingLink) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+  }
 }
-
-// Coordinate di Naro, Sicilia
-const NARO_LAT = 37.2964;
-const NARO_LNG = 13.7764;
 
 // Interfaccia segnalazione
 interface Segnalazione {
@@ -33,33 +34,9 @@ interface Segnalazione {
   createdAt: string;
 }
 
-// Colori urgenza (standard, leggibili su sfondo chiaro)
-const coloriUrgenza: Record<string, string> = {
-  bassa: '#22c55e',
-  media: '#eab308',
-  alta: '#f97316',
-  critica: '#ef4444',
-};
-
-// Etichette urgenza
-const etichetteUrgenza: Record<string, string> = {
-  bassa: 'BASSA',
-  media: 'MEDIA',
-  alta: 'ALTA',
-  critica: 'CRITICA',
-};
-
-// Etichette stato
-const etichetteStato: Record<string, string> = {
-  ricevuta: 'Ricevuta',
-  in_lavorazione: 'In lavorazione',
-  risolta: 'Risolta',
-  archiviata: 'Archiviata',
-};
-
 // Icone marker con colori solidi su sfondo chiaro
-function creaIconaTattica(urgenza: string, hover: boolean = false): L.DivIcon {
-  const colore = coloriUrgenza[urgenza] || '#eab308';
+function creaIconaMarker(urgenza: string, hover: boolean = false): L.DivIcon {
+  const colore = COLORI_URGENZA_HEX[urgenza] || '#eab308';
   const markerSize = hover ? 28 : 22;
   const outerSize = hover ? 36 : 30;
   return L.divIcon({
@@ -109,7 +86,7 @@ function AdattaVista({ segnalazioni }: { segnalazioni: Segnalazione[] }) {
   return null;
 }
 
-// Componente Fly-to-Target
+// Componente Fly-to
 function VoloAlBersaglio({ bersaglio }: { bersaglio: { lat: number; lng: number } | null }) {
   const mappa = useMap();
 
@@ -122,8 +99,8 @@ function VoloAlBersaglio({ bersaglio }: { bersaglio: { lat: number; lng: number 
   return null;
 }
 
-// Componente Telemetria - traccia posizione centro mappa
-function TracciamentoTelemetria({
+// Componente tracciamento centro mappa
+function TracciamentoCentro({
   onCambioCentro,
 }: {
   onCambioCentro: (lat: number, lng: number, zoom: number) => void;
@@ -161,7 +138,8 @@ export default function MappaLeaflet({
   onToggleAudio,
   onSuonoSelezione,
 }: PropsMappaLeaflet) {
-  const [centroMappa, setCentroMappa] = useState({ lat: NARO_LAT, lng: NARO_LNG, zoom: 14 });
+  const configComune = useStore((s) => s.configComune);
+  const [centroMappa, setCentroMappa] = useState({ lat: configComune.latCentro, lng: configComune.lngCentro, zoom: 14 });
 
   const aggiornaCentro = useCallback((lat: number, lng: number, zoom: number) => {
     setCentroMappa({ lat, lng, zoom });
@@ -174,7 +152,7 @@ export default function MappaLeaflet({
   const indiceCriticita = segnalazioni.length > 0
     ? Math.min(100, Math.round((segnalazioniCritiche / segnalazioni.length) * 100))
     : 0;
-  const settoreSicuro = indiceCriticita < 40;
+  const zonaSicura = indiceCriticita < 40;
 
   // Determina colore barra criticità
   const coloreBarra =
@@ -188,7 +166,7 @@ export default function MappaLeaflet({
     <div className="relative h-[400px] md:h-[500px] lg:h-[600px] w-full z-0 overflow-hidden">
       {/* Mappa Leaflet */}
       <MapContainer
-        center={[NARO_LAT, NARO_LNG]}
+        center={[configComune.latCentro, configComune.lngCentro]}
         zoom={14}
         className="h-full w-full light-hud"
         scrollWheelZoom={true}
@@ -200,13 +178,13 @@ export default function MappaLeaflet({
         />
         <AdattaVista segnalazioni={segnalazioni} />
         <VoloAlBersaglio bersaglio={bersaglioVolo} />
-        <TracciamentoTelemetria onCambioCentro={aggiornaCentro} />
+        <TracciamentoCentro onCambioCentro={aggiornaCentro} />
 
         {segnalazioni.map((segnalazione) => (
           <Marker
             key={segnalazione.id}
             position={[segnalazione.latitudine, segnalazione.longitudine]}
-            icon={creaIconaTattica(segnalazione.urgenza, segnalazioneHover === segnalazione.id)}
+            icon={creaIconaMarker(segnalazione.urgenza, segnalazioneHover === segnalazione.id)}
             eventHandlers={{
               mouseover: () => onHover(segnalazione.id),
               mouseout: () => onHover(null),
@@ -216,11 +194,8 @@ export default function MappaLeaflet({
             <Popup>
               <div className="min-w-[200px] p-1">
                 <h3 className="font-bold text-sm mb-1 text-gray-800">
-                  TGT-{segnalazione.id.slice(0, 5).toUpperCase()}
-                </h3>
-                <p className="text-xs mb-2 text-gray-700">
                   {segnalazione.titolo}
-                </p>
+                </h3>
                 <p className="text-xs mb-2 line-clamp-2 text-gray-500">
                   {segnalazione.descrizione}
                 </p>
@@ -228,12 +203,12 @@ export default function MappaLeaflet({
                   <span
                     className="text-[9px] px-1.5 py-0.5 rounded"
                     style={{
-                      backgroundColor: coloriUrgenza[segnalazione.urgenza] + '22',
-                      color: coloriUrgenza[segnalazione.urgenza],
-                      border: `1px solid ${coloriUrgenza[segnalazione.urgenza]}44`,
+                      backgroundColor: COLORI_URGENZA_HEX[segnalazione.urgenza] + '22',
+                      color: COLORI_URGENZA_HEX[segnalazione.urgenza],
+                      border: `1px solid ${COLORI_URGENZA_HEX[segnalazione.urgenza]}44`,
                     }}
                   >
-                    {etichetteUrgenza[segnalazione.urgenza]}
+                    {ETICHETTE_URGENZA[segnalazione.urgenza]}
                   </span>
                   <span
                     className="text-[9px] px-1.5 py-0.5 rounded"
@@ -243,15 +218,15 @@ export default function MappaLeaflet({
                       border: '1px solid rgba(100,100,100,0.2)',
                     }}
                   >
-                    {etichetteStato[segnalazione.stato]}
+                    {ETICHETTE_STATO[segnalazione.stato]}
                   </span>
                 </div>
                 <div className="text-[10px] mb-1 text-gray-400">
-                  COORD: {segnalazione.latitudine.toFixed(4)}, {segnalazione.longitudine.toFixed(4)}
+                  Coordinate: {segnalazione.latitudine.toFixed(4)}, {segnalazione.longitudine.toFixed(4)}
                 </div>
                 {segnalazione.indirizzo && (
                   <div className="text-[10px] mb-1 text-gray-400">
-                    LOC: {segnalazione.indirizzo}
+                    Indirizzo: {segnalazione.indirizzo}
                   </div>
                 )}
                 <button
@@ -266,47 +241,46 @@ export default function MappaLeaflet({
         ))}
       </MapContainer>
 
-      {/* Overlay: Griglia sottile (discreta su sfondo chiaro) */}
-      {/* <div className="griglia-cyber" /> */}
-
-      {/* Overlays sonar e mirino rimossi per tema chiaro */}
-
       {/* Pulsante Audio */}
       <button
         onClick={onToggleAudio}
-        className={`pulsante-hud absolute top-3 right-12 z-[1001] px-3 py-1.5 rounded ${!audioAttivo ? 'disattivo' : ''}`}
+        className={`absolute top-3 right-12 z-[1001] px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${
+          audioAttivo
+            ? 'bg-white/90 border border-amber-300/60 text-amber-800 shadow-sm hover:bg-amber-50'
+            : 'bg-white/90 border border-gray-200/60 text-gray-400 shadow-sm hover:bg-gray-50'
+        }`}
       >
         {audioAttivo ? '◉ Audio ON' : '◯ Audio OFF'}
       </button>
 
-      {/* Pannello Telemetria */}
-      <div className="pannello-telemetria absolute bottom-3 right-3 z-[1001] rounded-lg px-3 py-2.5 min-w-[200px]">
-        <div className="mb-1.5 text-[10px] tracking-wider opacity-50">
-          ▸ TELEMETRIA
+      {/* Pannello Info Mappa */}
+      <div className="absolute bottom-3 right-3 z-[1001] rounded-lg px-3 py-2.5 min-w-[200px] bg-white/90 backdrop-blur-sm border border-amber-200/60 shadow-sm text-[11px] text-gray-700">
+        <div className="mb-1.5 text-[10px] tracking-wide text-amber-700/70 font-medium">
+          ℹ Info
         </div>
-        <div className="mb-1">
-          LAT: {centroMappa.lat.toFixed(6)}
+        <div className="mb-1 text-gray-600">
+          Lat: {centroMappa.lat.toFixed(6)}
         </div>
-        <div className="mb-1">
-          LNG: {centroMappa.lng.toFixed(6)}
+        <div className="mb-1 text-gray-600">
+          Lng: {centroMappa.lng.toFixed(6)}
         </div>
-        <div className="mb-1.5">
-          ZOOM: {centroMappa.zoom}
+        <div className="mb-1.5 text-gray-600">
+          Zoom: {centroMappa.zoom}
         </div>
         <div className="mb-1.5 flex items-center gap-1.5">
-          <span style={{ color: settoreSicuro ? '#22c55e' : '#ef4444' }}>
-            {settoreSicuro ? '◉' : '⚠'}
+          <span style={{ color: zonaSicura ? '#22c55e' : '#ef4444' }}>
+            {zonaSicura ? '◉' : '⚠'}
           </span>
-          <span style={{ color: settoreSicuro ? '#22c55e' : '#ef4444' }}>
-            {settoreSicuro ? 'SETTORE SICURO' : 'SETTORE CRITICO'}
+          <span className="font-medium" style={{ color: zonaSicura ? '#22c55e' : '#ef4444' }}>
+            {zonaSicura ? 'Zona Sicura' : 'Zona Critica'}
           </span>
         </div>
         <div>
-          <div className="flex justify-between mb-0.5">
-            <span>INDICE CRITICITÀ</span>
-            <span style={{ color: coloreBarra }}>{indiceCriticita}%</span>
+          <div className="flex justify-between mb-0.5 text-gray-600">
+            <span>Indice Criticità</span>
+            <span style={{ color: coloreBarra }} className="font-medium">{indiceCriticita}%</span>
           </div>
-          <div className="w-full h-1.5 rounded-full" style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
+          <div className="w-full h-1.5 rounded-full bg-gray-100">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
@@ -320,12 +294,12 @@ export default function MappaLeaflet({
 
       {/* Label sistema */}
       <div
-        className="absolute top-3 left-3 z-[1001] pannello-telemetria rounded px-2.5 py-1.5"
-        style={{ fontSize: '10px', letterSpacing: '0.15em' }}
+        className="absolute top-3 left-3 z-[1001] rounded-lg px-2.5 py-1.5 bg-white/90 backdrop-blur-sm border border-amber-200/60 shadow-sm text-amber-800"
+        style={{ fontSize: '10px', letterSpacing: '0.08em' }}
       >
-        MAPPA INTERATTIVA
+        Mappa Interattiva
         <br />
-        <span style={{ opacity: 0.5 }}>NARO — SICILIA</span>
+        <span className="text-amber-700/50">{configComune.nomeComune.replace('Comune di ', '')}, {configComune.regione}</span>
       </div>
     </div>
   );

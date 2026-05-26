@@ -1,5 +1,5 @@
-// Schema del database per l'applicazione Naro a 4 Zampe
-// Gestione segnalazioni di animali randagi nel comune di Naro
+// Schema del database per l'applicazione multi-comune "a 4 Zampe"
+// Gestione segnalazioni di animali randagi - configurabile per qualsiasi comune
 
 generator client {
   provider = "prisma-client-js"
@@ -8,6 +8,35 @@ generator client {
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+// ─── Configurazione del Comune (SINGLETON) ──────────────────────────────────
+// Un solo record attivo per deployment. Ogni istanza dell'app = un comune.
+model Comune {
+  id              String   @id @default(cuid())
+  // Identità
+  nomeComune      String                       // es. "Comune di Naro"
+  nomeApp         String                       // es. "Naro a 4 Zampe"
+  slug            String   @unique             // es. "naro" — identificativo URL-safe
+  // Geografia
+  latCentro       Float                        // latitudine centro abitato
+  lngCentro       Float                        // longitudine centro abitato
+  raggioKm        Float    @default(10)        // raggio operativo in km
+  regione         String   @default("Sicilia") // regione
+  provincia       String   @default("AG")      // sigla provincia
+  // Contatti emergenza
+  telefonoEmergenza   String?                  // es. "0922 411111"
+  telefonoVeterinaria String?                  // es. "0922 412222"
+  emailComune     String?                      // es. "comune@comune.naro.it"
+  // Credenziali operatori (JSON)
+  credenziali     String   @default("[]")      // JSON array di {username, password, nome, ruolo}
+  // Branding
+  colorePrimario  String   @default("yellow")  // chiave colore Tailwind
+  // Stato
+  attivo          Boolean  @default(true)
+  setupCompletato Boolean @default(false)      // true dopo il wizard iniziale
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 // Utente del sistema (cittadini e amministratori)
@@ -56,7 +85,7 @@ model Segnalazione {
   consensoDichiarazione Boolean  @default(false)  // dichiarazione di responsabilità
   dataConsenso          DateTime?                // data in cui è stato dato il consenso
   // Zona operativa
-  raggioOperativo       Float?                   // distanza in km dal centro di Naro
+  raggioOperativo       Float?                   // distanza in km dal centro del comune
   fuoriZona             Boolean  @default(false) // true se fuori dal raggio operativo
   // Relazioni
   utenteId    String?
@@ -76,6 +105,16 @@ model Notifica {
   segnalazioneId String
   segnalazione   Segnalazione @relation(fields: [segnalazioneId], references: [id])
   createdAt      DateTime @default(now())
+}
+
+// Token di accesso per Area Personale (verifica via email)
+model TokenAccesso {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  usato     Boolean  @default(false)
+  scadenza  DateTime
+  createdAt DateTime @default(now())
 }
 
 // Log delle modifiche apportate alle segnalazioni

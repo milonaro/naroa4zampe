@@ -1,15 +1,12 @@
 // API per la gestione delle segnalazioni di animali randagi
 // GET: elenco segnalazioni con filtri opzionali
 // POST: creazione di una nuova segnalazione
+// Coordinate del centro lette dinamicamente dal record Comune
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
-
-// Coordinate del centro di Naro
-const NARO_LAT = 37.2964;
-const NARO_LNG = 13.7764;
-const RAGGIO_KM = 10; // Raggio operativo di 10 km dal centro
+import { getComuneConfig } from '@/lib/tenant';
 
 // Formula di Haversine per il calcolo della distanza tra due punti geografici
 function distanzaKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -69,7 +66,6 @@ export async function GET(request: NextRequest) {
     if (tipoAnimale) filtri.tipoAnimale = tipoAnimale;
 
     // Filtro ricerca per titolo o descrizione (case-insensitive con SQLite)
-    // Nota: SQLite contains è già case-insensitive di default
     if (search) {
       filtri.OR = [
         { titolo: { contains: search } },
@@ -125,9 +121,12 @@ export async function POST(request: NextRequest) {
     const corpo = await request.json();
     const datiValidati = creaSegnalazioneSchema.parse(corpo);
 
-    // Calcolo della distanza dal centro di Naro tramite formula di Haversine
-    const distanza = distanzaKm(NARO_LAT, NARO_LNG, datiValidati.latitudine, datiValidati.longitudine);
-    const fuoriZona = distanza > RAGGIO_KM;
+    // Carica coordinate dinamiche dal Comune
+    const config = await getComuneConfig(db);
+
+    // Calcolo della distanza dal centro tramite formula di Haversine
+    const distanza = distanzaKm(config.latCentro, config.lngCentro, datiValidati.latitudine, datiValidati.longitudine);
+    const fuoriZona = distanza > config.raggioKm;
 
     // Preparazione dati per la creazione (rimuovo i campi non appartenenti al modello)
     const { consensoPrivacy, consensoDichiarazione, dataConsenso, ...altriDati } = datiValidati;

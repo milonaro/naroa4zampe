@@ -43,75 +43,75 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Tema chiaro con toni ambra/arancio caldi */
+/* Tema chiaro con toni giallo arenario caldi */
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.99 0.005 80);
-  --foreground: oklch(0.25 0.04 50);
+  --background: oklch(0.99 0.005 85);
+  --foreground: oklch(0.25 0.04 55);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.04 50);
+  --card-foreground: oklch(0.25 0.04 55);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.04 50);
-  --primary: oklch(0.55 0.15 55);
-  --primary-foreground: oklch(0.98 0.005 80);
-  --secondary: oklch(0.96 0.02 80);
-  --secondary-foreground: oklch(0.35 0.06 50);
-  --muted: oklch(0.96 0.015 80);
-  --muted-foreground: oklch(0.55 0.04 60);
-  --accent: oklch(0.96 0.03 80);
-  --accent-foreground: oklch(0.35 0.06 50);
+  --popover-foreground: oklch(0.25 0.04 55);
+  --primary: oklch(0.60 0.16 85);
+  --primary-foreground: oklch(0.98 0.005 85);
+  --secondary: oklch(0.96 0.02 85);
+  --secondary-foreground: oklch(0.35 0.06 55);
+  --muted: oklch(0.96 0.015 85);
+  --muted-foreground: oklch(0.55 0.04 65);
+  --accent: oklch(0.96 0.03 85);
+  --accent-foreground: oklch(0.35 0.06 55);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.02 80);
-  --input: oklch(0.92 0.02 80);
-  --ring: oklch(0.65 0.15 55);
-  --chart-1: oklch(0.65 0.15 55);
-  --chart-2: oklch(0.6 0.18 40);
+  --border: oklch(0.92 0.02 85);
+  --input: oklch(0.92 0.02 85);
+  --ring: oklch(0.65 0.16 85);
+  --chart-1: oklch(0.65 0.16 85);
+  --chart-2: oklch(0.6 0.14 75);
   --chart-3: oklch(0.7 0.12 140);
   --chart-4: oklch(0.55 0.2 25);
-  --chart-5: oklch(0.75 0.1 80);
-  --sidebar: oklch(0.98 0.005 80);
-  --sidebar-foreground: oklch(0.25 0.04 50);
-  --sidebar-primary: oklch(0.55 0.15 55);
-  --sidebar-primary-foreground: oklch(0.98 0.005 80);
-  --sidebar-accent: oklch(0.96 0.02 80);
-  --sidebar-accent-foreground: oklch(0.35 0.06 50);
-  --sidebar-border: oklch(0.92 0.02 80);
-  --sidebar-ring: oklch(0.65 0.15 55);
+  --chart-5: oklch(0.75 0.1 85);
+  --sidebar: oklch(0.98 0.005 85);
+  --sidebar-foreground: oklch(0.25 0.04 55);
+  --sidebar-primary: oklch(0.60 0.16 85);
+  --sidebar-primary-foreground: oklch(0.98 0.005 85);
+  --sidebar-accent: oklch(0.96 0.02 85);
+  --sidebar-accent-foreground: oklch(0.35 0.06 55);
+  --sidebar-border: oklch(0.92 0.02 85);
+  --sidebar-ring: oklch(0.65 0.16 85);
 }
 
-/* Tema scuro con toni ambra caldi */
+/* Tema scuro con toni giallo arenario caldi */
 .dark {
-  --background: oklch(0.15 0.02 50);
-  --foreground: oklch(0.95 0.01 80);
-  --card: oklch(0.2 0.025 50);
-  --card-foreground: oklch(0.95 0.01 80);
-  --popover: oklch(0.2 0.025 50);
-  --popover-foreground: oklch(0.95 0.01 80);
-  --primary: oklch(0.7 0.15 55);
-  --primary-foreground: oklch(0.15 0.02 50);
-  --secondary: oklch(0.25 0.03 50);
-  --secondary-foreground: oklch(0.9 0.01 80);
-  --muted: oklch(0.25 0.03 50);
-  --muted-foreground: oklch(0.65 0.04 60);
-  --accent: oklch(0.25 0.03 50);
-  --accent-foreground: oklch(0.9 0.01 80);
+  --background: oklch(0.15 0.02 55);
+  --foreground: oklch(0.95 0.01 85);
+  --card: oklch(0.2 0.025 55);
+  --card-foreground: oklch(0.95 0.01 85);
+  --popover: oklch(0.2 0.025 55);
+  --popover-foreground: oklch(0.95 0.01 85);
+  --primary: oklch(0.72 0.16 85);
+  --primary-foreground: oklch(0.15 0.02 55);
+  --secondary: oklch(0.25 0.03 55);
+  --secondary-foreground: oklch(0.9 0.01 85);
+  --muted: oklch(0.25 0.03 55);
+  --muted-foreground: oklch(0.65 0.04 65);
+  --accent: oklch(0.25 0.03 55);
+  --accent-foreground: oklch(0.9 0.01 85);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.15 55);
-  --chart-1: oklch(0.7 0.15 55);
-  --chart-2: oklch(0.65 0.18 40);
+  --ring: oklch(0.65 0.16 85);
+  --chart-1: oklch(0.72 0.16 85);
+  --chart-2: oklch(0.65 0.14 75);
   --chart-3: oklch(0.65 0.12 140);
   --chart-4: oklch(0.6 0.2 25);
-  --chart-5: oklch(0.75 0.1 80);
-  --sidebar: oklch(0.2 0.025 50);
-  --sidebar-foreground: oklch(0.95 0.01 80);
-  --sidebar-primary: oklch(0.7 0.15 55);
-  --sidebar-primary-foreground: oklch(0.95 0.01 80);
-  --sidebar-accent: oklch(0.25 0.03 50);
-  --sidebar-accent-foreground: oklch(0.9 0.01 80);
+  --chart-5: oklch(0.75 0.1 85);
+  --sidebar: oklch(0.2 0.025 55);
+  --sidebar-foreground: oklch(0.95 0.01 85);
+  --sidebar-primary: oklch(0.72 0.16 85);
+  --sidebar-primary-foreground: oklch(0.95 0.01 85);
+  --sidebar-accent: oklch(0.25 0.03 55);
+  --sidebar-accent-foreground: oklch(0.9 0.01 85);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.65 0.15 55);
+  --sidebar-ring: oklch(0.65 0.16 85);
 }
 
 @layer base {
@@ -120,6 +120,17 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Cursore mano su tutti gli elementi cliccabili e link */
+  a, button, [role="button"], [type="button"], [type="submit"], [type="reset"],
+  summary, [tabindex]:not([tabindex="-1"]), select, option,
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  /* Hover underline per link */
+  a:hover, [role="link"]:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 }
 
@@ -143,23 +154,23 @@
   border: none !important;
 }
 
-/* Scrollbar personalizzata */
+/* Scrollbar personalizzata - giallo arenario */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #fef3c7;
+  background: #fef9c3;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #f59e0b;
+  background: #eab308;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #d97706;
+  background: #ca8a04;
 }
 
 /* Stile per i popup di Leaflet */
@@ -172,64 +183,16 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* === TACTICAL HUD STYLES === */
+/* === MAP OVERLAY STYLES (civic, warm theme) === */
 
-/* Mirino centrale */
+/* Mirino centrale (mantenuto per compatibilità ma non più usato come tattico) */
 .mirino-tattico {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 1000;
+  display: none;
 }
 
-.mirino-tattico::before,
-.mirino-tattico::after {
-  content: '';
-  position: absolute;
-  background: rgba(100, 100, 100, 0.5);
-}
-
-.mirino-tattico::before {
-  width: 1px;
-  height: 40px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 -25px 0 rgba(100, 100, 100, 0.25), 0 25px 0 rgba(100, 100, 100, 0.25);
-}
-
-.mirino-tattico::after {
-  width: 40px;
-  height: 1px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: -25px 0 0 rgba(100, 100, 100, 0.25), 25px 0 0 rgba(100, 100, 100, 0.25);
-}
-
-/* Animazione pulsazione mirino */
-@keyframes pulsazione-mirino {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-.mirino-tattico {
-  animation: pulsazione-mirino 2s ease-in-out infinite;
-}
-
-/* Sweep sonar */
+/* Sweep sonar (disabilitato - non più usato) */
 .sweep-sonar {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 200px;
-  height: 200px;
-  margin-left: -100px;
-  margin-top: -100px;
-  pointer-events: none;
-  z-index: 999;
+  display: none;
 }
 
 @keyframes rotazione-sonar {
@@ -238,65 +201,46 @@
 }
 
 .sweep-sonar-linea {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100px;
-  height: 2px;
-  transform-origin: left center;
-  background: linear-gradient(90deg, rgba(100, 100, 100, 0.4), transparent);
-  animation: rotazione-sonar 4s linear infinite;
+  display: none;
 }
 
-/* Griglia cyber */
+/* Griglia (disabilitata) */
 .griglia-cyber {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 998;
-  background-image: 
-    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+  display: none;
 }
 
-/* Effetto scan-line */
+/* Effetto scan-line (disabilitato) */
 @keyframes scanline {
   0% { transform: translateY(-100%); }
   100% { transform: translateY(100%); }
 }
 
 .scanline-effetto::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: none;
+  display: none;
 }
 
-/* Pannello telemetria - tema chiaro */
+/* Pannello info mappa - tema chiaro caldo */
 .pannello-telemetria {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(200, 200, 200, 0.5);
-  color: rgba(50, 50, 50, 0.9);
-  font-family: 'Courier New', monospace;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  color: rgba(120, 53, 15, 0.8);
   font-size: 11px;
+  border-radius: 8px;
 }
 
-/* Pulsante HUD - tema chiaro */
+/* Pulsante mappa - tema chiaro caldo */
 .pulsante-hud {
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(200, 200, 200, 0.6);
-  color: rgba(50, 50, 50, 0.9);
-  font-family: 'Courier New', monospace;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  color: rgba(120, 53, 15, 0.8);
   font-size: 11px;
   transition: all 0.2s;
 }
 
 .pulsante-hud:hover {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(254, 243, 199, 0.9);
+  border-color: rgba(217, 119, 6, 0.5);
 }
 
 .pulsante-hud.disattivo {
@@ -304,17 +248,17 @@
   color: rgba(150, 150, 150, 0.7);
 }
 
-/* Contatto radar - tema chiaro */
+/* Contatto radar - tema chiaro caldo */
 .contatto-radar {
-  border: 1px solid rgba(200, 200, 200, 0.4);
+  border: 1px solid rgba(217, 119, 6, 0.2);
   background: rgba(255, 255, 255, 0.7);
   transition: all 0.2s;
   cursor: pointer;
 }
 
 .contatto-radar:hover {
-  border-color: rgba(245, 158, 11, 0.5);
-  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(217, 119, 6, 0.5);
+  background: rgba(254, 243, 199, 0.5);
 }
 
 @keyframes lampeggio-punto {
@@ -359,7 +303,7 @@
 }
 
 .light-hud .leaflet-control-zoom a:hover {
-  background: rgba(245, 158, 11, 0.1) !important;
+  background: rgba(234, 179, 8, 0.1) !important;
 }
 
 .light-hud .leaflet-control-attribution {
@@ -368,7 +312,7 @@
 }
 
 .light-hud .leaflet-control-attribution a {
-  color: rgba(180, 120, 0, 0.8) !important;
+  color: rgba(180, 150, 0, 0.8) !important;
 }
 
 /* Dark HUD (legacy - updated to light) */
@@ -399,7 +343,7 @@
 }
 
 .dark-hud .leaflet-control-attribution a {
-  color: rgba(180, 120, 0, 0.8) !important;
+  color: rgba(180, 150, 0, 0.8) !important;
 }
 
 /* === UI/UX ENHANCEMENT STYLES === */
@@ -412,11 +356,11 @@
 
 /* Effetto glow sottile */
 .glow-sottile {
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.15);
 }
 
 .glow-sottile:hover {
-  box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 25px rgba(234, 179, 8, 0.25);
 }
 
 /* Effetto glassmorphism */
@@ -432,7 +376,7 @@
   background: rgba(15, 15, 25, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.15);
 }
 
 /* Bordo sinistro colorato per urgenza */
@@ -468,7 +412,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #f59e0b, transparent);
+  background: linear-gradient(90deg, transparent, #eab308, transparent);
   border-radius: 1px;
 }
 
@@ -480,16 +424,24 @@
 /* Pattern griglia sottile per sfondo */
 .pattern-griglia {
   background-image: 
-    linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(234, 179, 8, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(234, 179, 8, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
+}
+
+/* Full-width breakout dal container */
+.slider-full-width {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* Pattern griglia scura */
 .pattern-griglia-scuro {
   background-image: 
-    linear-gradient(rgba(245, 158, 11, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 158, 11, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(234, 179, 8, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(234, 179, 8, 0.06) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -525,8 +477,8 @@
 
 /* Stats card hover glow */
 @keyframes bordo-glow {
-  0%, 100% { box-shadow: 0 0 0 rgba(245, 158, 11, 0); }
-  50% { box-shadow: 0 0 12px rgba(245, 158, 11, 0.15); }
+  0%, 100% { box-shadow: 0 0 0 rgba(234, 179, 8, 0); }
+  50% { box-shadow: 0 0 12px rgba(234, 179, 8, 0.15); }
 }
 
 .scheda-glow:hover {

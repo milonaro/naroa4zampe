@@ -1,5 +1,5 @@
-// Vista Dashboard - Centro di Controllo Operativo "Naro a 4 Zampe"
-// Design: Military Command Center / Dark Tactical Theme
+// Vista Dashboard - Pannello Amministrativo multi-comune
+// Design: Warm Sandy Yellow / Arenario Theme
 // Accessibile solo dopo autenticazione
 
 'use client';
@@ -96,55 +96,18 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { getEmailDomain, getCentroLabel, getFuoriZonaMessage, getPlaceholderIndirizzo, getTitoloNotifica } from '@/lib/tenant';
+import {
+  COLORI_URGENZA_CHART,
+  COLORI_URGENZA_BADGE,
+  COLORI_STATO_BADGE,
+  ETICHETTE_URGENZA,
+  ETICHETTE_STATO,
+  ETICHETTE_TAGLIA,
+} from '@/lib/constants';
+import { distanzaKm } from '@/lib/geo';
 
-// ─── Costanti ─────────────────────────────────────────────────────────────────
-const NARO_LAT = 37.2964;
-const NARO_LNG = 13.7764;
-const RAGGIO_KM = 10;
-
-const COLORI_URGENZA_CHART: Record<string, string> = {
-  bassa: '#22c55e',
-  media: '#eab308',
-  alta: '#f97316',
-  critica: '#ef4444',
-};
-
-// Etichette in italiano
-const etichetteUrgenza: Record<string, string> = {
-  bassa: 'Bassa',
-  media: 'Media',
-  alta: 'Alta',
-  critica: 'Critica',
-};
-
-const etichetteStato: Record<string, string> = {
-  ricevuta: 'Ricevuta',
-  in_lavorazione: 'In lavorazione',
-  risolta: 'Risolta',
-  archiviata: 'Archiviata',
-};
-
-const etichetteTaglia: Record<string, string> = {
-  piccola: 'Piccola',
-  media: 'Media',
-  grande: 'Grande',
-};
-
-// Colori badge scuri
-const coloriUrgenzaDark: Record<string, string> = {
-  bassa: 'bg-green-900/60 text-green-300 border border-green-700/50',
-  media: 'bg-yellow-900/60 text-yellow-300 border border-yellow-700/50',
-  alta: 'bg-orange-900/60 text-orange-300 border border-orange-700/50',
-  critica: 'bg-red-900/60 text-red-300 border border-red-700/50',
-};
-
-const coloriStatoDark: Record<string, string> = {
-  ricevuta: 'bg-cyan-900/60 text-cyan-300 border border-cyan-700/50',
-  in_lavorazione: 'bg-amber-900/60 text-amber-300 border border-amber-700/50',
-  risolta: 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50',
-  archiviata: 'bg-slate-700/60 text-slate-300 border border-slate-600/50',
-};
-
+// ─── Costanti locali (solo per questo componente) ──────────────────────────────
 const etichetteCampo: Record<string, string> = {
   stato: 'Stato',
   urgenza: 'Urgenza',
@@ -223,17 +186,6 @@ interface UtenteDashboard {
   }[];
 }
 
-// ─── Formula di Haversine ─────────────────────────────────────────────────────
-function distanzaKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 // ─── Varianti animazione ─────────────────────────────────────────────────────
 const contenitoreVariante = {
   nascosto: { opacity: 0 },
@@ -244,7 +196,7 @@ const elementoVariante = { nascosto: { opacity: 0, y: 12 }, visibile: { opacity:
 // ─── Componente Principale ────────────────────────────────────────────────────
 export default function DashboardView() {
   const queryClient = useQueryClient();
-  const { selezionaSegnalazione, adminNome, adminUsername } = useStore();
+  const { selezionaSegnalazione, adminNome, adminUsername, configComune } = useStore();
   const [tabAttiva, setTabAttiva] = useState('panoramica');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -258,21 +210,22 @@ export default function DashboardView() {
     }
     return 'default';
   });
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceUtentiRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previousUrgentCountRef = useRef<number>(0);
 
-  // ─── Debounce search ────────────────────────────────────────────────────
+  // ─── Debounce search (ref separato) ────────────────────────────────────
   useEffect(() => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 300);
-    return () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); };
+    if (debounceSearchRef.current) clearTimeout(debounceSearchRef.current);
+    debounceSearchRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => { if (debounceSearchRef.current) clearTimeout(debounceSearchRef.current); };
   }, [searchQuery]);
 
-  // ─── Debounce utenti search ────────────────────────────────────────────
+  // ─── Debounce utenti search (ref separato) ──────────────────────────────
   useEffect(() => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => setDebouncedUtentiSearch(utentiSearch), 300);
-    return () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); };
+    if (debounceUtentiRef.current) clearTimeout(debounceUtentiRef.current);
+    debounceUtentiRef.current = setTimeout(() => setDebouncedUtentiSearch(utentiSearch), 300);
+    return () => { if (debounceUtentiRef.current) clearTimeout(debounceUtentiRef.current); };
   }, [utentiSearch]);
 
   // ─── Richiedi permesso notifiche ────────────────────────────────────────
@@ -371,7 +324,7 @@ export default function DashboardView() {
         // Notifica browser nativa
         if (permessoNotifiche === 'granted') {
           try {
-            new Notification('Naro a 4 Zampe — Allarme', {
+            new Notification(getTitoloNotifica(configComune), {
               body: `${newCount} nuova/e segnalazione/i con urgenza critica rilevata/e`,
               icon: '🚨',
               tag: 'urgent-alert',
@@ -395,7 +348,8 @@ export default function DashboardView() {
   // ─── Mutation: Aggiorna stato ───────────────────────────────────────────
   const aggiornaStato = useMutation({
     mutationFn: async ({ id, stato }: { id: string; stato: string }) => {
-      const adminEmail = adminUsername ? `${adminUsername}@comune.naro.it` : 'admin@comune.naro.it';
+      const emailDomain = getEmailDomain(configComune);
+      const adminEmail = adminUsername ? `${adminUsername}@${emailDomain}` : `admin@${emailDomain}`;
       const r = await fetch(`/api/segnalazioni/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -472,7 +426,7 @@ export default function DashboardView() {
 
   const datiUrgenza = statistiche?.perUrgenza
     ? Object.entries(statistiche.perUrgenza).map(([urg, count]) => ({
-        name: etichetteUrgenza[urg] || urg,
+        name: ETICHETTE_URGENZA[urg] || urg,
         value: count,
         colore: COLORI_URGENZA_CHART[urg] || '#999',
       }))
@@ -484,37 +438,37 @@ export default function DashboardView() {
       titolo: 'Totale',
       valore: statistiche?.totale || 0,
       icona: FileText,
-      coloreGlow: 'shadow-cyan-500/30',
-      bordoGlow: 'border-cyan-500/40',
-      coloreTesto: 'text-cyan-400',
-      coloreIcona: 'text-cyan-500',
+      gradiente: 'from-yellow-50/80 to-yellow-50/80',
+      bordo: 'border-yellow-200/60',
+      coloreTesto: 'text-yellow-800',
+      coloreIcona: 'text-yellow-600',
     },
     {
       titolo: 'Ricevute',
       valore: statistiche?.perStato?.ricevuta || 0,
       icona: Clock,
-      coloreGlow: 'shadow-sky-500/30',
-      bordoGlow: 'border-sky-500/40',
-      coloreTesto: 'text-sky-400',
-      coloreIcona: 'text-sky-500',
+      gradiente: 'from-sky-50/80 to-blue-50/80',
+      bordo: 'border-sky-200/60',
+      coloreTesto: 'text-sky-800',
+      coloreIcona: 'text-sky-600',
     },
     {
       titolo: 'In Lavorazione',
       valore: statistiche?.perStato?.in_lavorazione || 0,
       icona: TrendingUp,
-      coloreGlow: 'shadow-amber-500/30',
-      bordoGlow: 'border-amber-500/40',
-      coloreTesto: 'text-amber-400',
-      coloreIcona: 'text-amber-500',
+      gradiente: 'from-amber-50/80 to-yellow-50/80',
+      bordo: 'border-amber-200/60',
+      coloreTesto: 'text-amber-800',
+      coloreIcona: 'text-amber-600',
     },
     {
       titolo: 'Risolte',
       valore: statistiche?.perStato?.risolta || 0,
       icona: CheckCircle,
-      coloreGlow: 'shadow-emerald-500/30',
-      bordoGlow: 'border-emerald-500/40',
-      coloreTesto: 'text-emerald-400',
-      coloreIcona: 'text-emerald-500',
+      gradiente: 'from-emerald-50/80 to-green-50/80',
+      bordo: 'border-emerald-200/60',
+      coloreTesto: 'text-emerald-800',
+      coloreIcona: 'text-emerald-600',
     },
   ];
 
@@ -529,23 +483,20 @@ export default function DashboardView() {
 
   // ─── Render ─────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 pb-8 bg-[#070a10] -m-6 p-6 min-h-screen">
+    <div className="container mx-auto px-4 space-y-6 pb-8 bg-gradient-to-b from-yellow-50/50 to-white p-6 min-h-screen">
       {/* ─── Intestazione ─────────────────────────────────────────────── */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-              <Activity className="h-5 w-5 text-cyan-400" />
+            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+              <Activity className="h-5 w-5 text-yellow-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-cyan-100 font-mono tracking-tight flex items-center gap-2">
-                Dashboard di Controllo
-                <span className="text-[10px] font-normal text-cyan-600 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
-                  NARO-4Z
-                </span>
+              <h2 className="text-xl font-bold text-yellow-800 tracking-tight flex items-center gap-2">
+                Dashboard Operativa
               </h2>
-              <p className="text-cyan-600 text-xs font-mono mt-0.5">
-                Naro a 4 Zampe — Centro Operativo
+              <p className="text-yellow-600 text-xs mt-0.5">
+                {configComune.nomeApp} — {getCentroLabel(configComune)}
               </p>
             </div>
           </div>
@@ -554,24 +505,24 @@ export default function DashboardView() {
             {notificheUrgentiNonLette > 0 && (
               <div className="relative">
                 <div className="absolute -inset-1 bg-red-500/30 rounded-full animate-ping" />
-                <div className="relative flex items-center gap-1.5 px-2.5 py-1 bg-red-900/50 border border-red-500/40 rounded-full">
-                  <Siren className="h-3.5 w-3.5 text-red-400 animate-pulse" />
-                  <span className="text-[10px] font-mono text-red-300">{notificheUrgentiNonLette} URGENTI</span>
+                <div className="relative flex items-center gap-1.5 px-2.5 py-1 bg-red-50 border border-red-300 rounded-full">
+                  <Siren className="h-3.5 w-3.5 text-red-600 animate-pulse" />
+                  <span className="text-[10px] text-red-700 font-semibold">{notificheUrgentiNonLette} URGENTI</span>
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-full">
-              <Shield className="h-3.5 w-3.5 text-cyan-400" />
-              <span className="text-xs font-mono text-cyan-300">{adminNome}</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full">
+              <Shield className="h-3.5 w-3.5 text-yellow-600" />
+              <span className="text-xs text-yellow-700">{adminNome}</span>
               {adminUsername && (
-                <span className="text-[10px] font-mono text-cyan-600">@{adminUsername}</span>
+                <span className="text-[10px] text-yellow-500">@{adminUsername}</span>
               )}
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* ─── Schede Statistiche con Glow ──────────────────────────────── */}
+      {/* ─── Schede Statistiche ────────────────────────────────────────── */}
       <motion.div
         variants={contenitoreVariante}
         initial="nascosto"
@@ -582,15 +533,18 @@ export default function DashboardView() {
           const Icona = scheda.icona;
           return (
             <motion.div key={scheda.titolo} variants={elementoVariante}>
-              <Card className={`bg-slate-900/80 border ${scheda.bordoGlow} shadow-lg ${scheda.coloreGlow} backdrop-blur-sm hover:shadow-xl transition-all duration-300`}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-xs font-mono text-slate-400 uppercase tracking-wider">{scheda.titolo}</CardTitle>
+              <Card className={`bg-gradient-to-br ${scheda.gradiente} ${scheda.bordo} hover:shadow-lg transition-all duration-300 relative overflow-hidden`}>
+                <div className="absolute -right-2 -bottom-2 opacity-[0.08]">
+                  <Icona className="h-16 w-16" />
+                </div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                  <CardTitle className="text-xs font-medium text-yellow-700 uppercase tracking-wider">{scheda.titolo}</CardTitle>
                   <Icona className={`h-4 w-4 ${scheda.coloreIcona}`} />
                 </CardHeader>
-                <CardContent>
-                  <div className={`text-3xl font-bold font-mono ${scheda.coloreTesto}`}>
+                <CardContent className="relative z-10">
+                  <div className={`text-3xl font-bold ${scheda.coloreTesto}`}>
                     {caricamentoStats ? (
-                      <span className="inline-block w-12 h-8 bg-slate-700/50 animate-pulse rounded" />
+                      <span className="inline-block w-12 h-8 bg-yellow-200/50 animate-pulse rounded" />
                     ) : (
                       scheda.valore
                     )}
@@ -604,43 +558,43 @@ export default function DashboardView() {
 
       {/* ─── Tab principali ───────────────────────────────────────────── */}
       <Tabs value={tabAttiva} onValueChange={setTabAttiva}>
-        <TabsList className="bg-slate-800/80 p-1 border border-slate-700/50">
+        <TabsList className="bg-yellow-100/80 p-1 border border-yellow-200/60">
           <TabsTrigger
             value="panoramica"
-            className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 font-mono text-xs"
+            className="data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-yellow-700 text-xs"
           >
             <Activity className="h-3.5 w-3.5 mr-1.5" />
             Panoramica
           </TabsTrigger>
           <TabsTrigger
             value="segnalazioni"
-            className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 font-mono text-xs"
+            className="data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-yellow-700 text-xs"
           >
             <FileText className="h-3.5 w-3.5 mr-1.5" />
             Segnalazioni
           </TabsTrigger>
           <TabsTrigger
             value="notifiche"
-            className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 font-mono text-xs relative"
+            className="data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-yellow-700 text-xs relative"
           >
             <Bell className="h-3.5 w-3.5 mr-1.5" />
             Notifiche
             {datiNotifiche?.nonLette > 0 && (
-              <Badge className="ml-1.5 h-5 min-w-[20px] p-0 flex items-center justify-center bg-red-600 text-white text-[10px] border-0 font-mono">
+              <Badge className="ml-1.5 h-5 min-w-[20px] p-0 flex items-center justify-center bg-red-600 text-white text-[10px] border-0">
                 {datiNotifiche.nonLette}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger
             value="utenti"
-            className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 font-mono text-xs"
+            className="data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-yellow-700 text-xs"
           >
             <Users className="h-3.5 w-3.5 mr-1.5" />
             Utenti
           </TabsTrigger>
           <TabsTrigger
             value="inserimento"
-            className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-slate-400 font-mono text-xs"
+            className="data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-yellow-700 text-xs"
           >
             <Plus className="h-3.5 w-3.5 mr-1.5" />
             Inserimento Manuale
@@ -651,35 +605,35 @@ export default function DashboardView() {
         <TabsContent value="panoramica" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Grafico a barre per mese */}
-            <Card className="bg-slate-900/80 border border-slate-700/50">
+            <Card className="border-yellow-200/60 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-cyan-500" />
+                <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-yellow-600" />
                   Segnalazioni per Mese
                 </CardTitle>
-                <CardDescription className="text-slate-500 text-xs font-mono">Andamento ultimi mesi</CardDescription>
+                <CardDescription className="text-yellow-600 text-xs">Andamento ultimi mesi</CardDescription>
               </CardHeader>
               <CardContent>
                 {datiMese.length > 0 ? (
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={datiMese}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                      <XAxis dataKey="mese" tick={{ fontSize: 10, fill: '#64748b' }} />
-                      <YAxis tick={{ fontSize: 10, fill: '#64748b' }} allowDecimals={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#fef3c7" />
+                      <XAxis dataKey="mese" tick={{ fontSize: 10, fill: '#92400e' }} />
+                      <YAxis tick={{ fontSize: 10, fill: '#92400e' }} allowDecimals={false} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#0f172a',
-                          border: '1px solid #0e7490',
+                          backgroundColor: '#fffbeb',
+                          border: '1px solid #f59e0b',
                           borderRadius: '8px',
                           fontSize: 12,
-                          color: '#22d3ee',
+                          color: '#92400e',
                         }}
                       />
-                      <Bar dataKey="segnalazioni" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="segnalazioni" fill="#d97706" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[280px] flex items-center justify-center text-slate-600 text-sm font-mono">
+                  <div className="h-[280px] flex items-center justify-center text-yellow-500 text-sm">
                     Nessun dato disponibile
                   </div>
                 )}
@@ -687,13 +641,13 @@ export default function DashboardView() {
             </Card>
 
             {/* Grafico a torta urgenza */}
-            <Card className="bg-slate-900/80 border border-slate-700/50">
+            <Card className="border-yellow-200/60 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-cyan-500" />
+                <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
                   Distribuzione per Urgenza
                 </CardTitle>
-                <CardDescription className="text-slate-500 text-xs font-mono">Proporzione livelli di urgenza</CardDescription>
+                <CardDescription className="text-yellow-600 text-xs">Proporzione livelli di urgenza</CardDescription>
               </CardHeader>
               <CardContent>
                 {datiUrgenza.length > 0 ? (
@@ -704,18 +658,18 @@ export default function DashboardView() {
                       </Pie>
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#0f172a',
-                          border: '1px solid #0e7490',
+                          backgroundColor: '#fffbeb',
+                          border: '1px solid #f59e0b',
                           borderRadius: '8px',
                           fontSize: 12,
-                          color: '#22d3ee',
+                          color: '#92400e',
                         }}
                       />
-                      <Legend formatter={(v: string) => <span style={{ color: '#94a3b8', fontSize: 11 }}>{v}</span>} />
+                      <Legend formatter={(v: string) => <span style={{ color: '#78716c', fontSize: 11 }}>{v}</span>} />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[280px] flex items-center justify-center text-slate-600 text-sm font-mono">
+                  <div className="h-[280px] flex items-center justify-center text-yellow-500 text-sm">
                     Nessun dato disponibile
                   </div>
                 )}
@@ -724,90 +678,90 @@ export default function DashboardView() {
           </div>
 
           {/* ─── Area Operativa ─────────────────────────────────────────── */}
-          <Card className="bg-slate-900/80 border border-cyan-500/20 shadow-lg shadow-cyan-500/5">
+          <Card className="border-yellow-200/60 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-                <Radar className="h-4 w-4 text-cyan-500" />
-                Area Operativa Preconfigurata
+              <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+                <Radar className="h-4 w-4 text-yellow-600" />
+                Area di Competenza Preconfigurata
               </CardTitle>
-              <CardDescription className="text-slate-500 text-xs font-mono">
-                Raggio di {areaOperativa?.raggioKm || RAGGIO_KM} km dal centro di Naro
+              <CardDescription className="text-yellow-600 text-xs">
+                Raggio di {areaOperativa?.raggioKm || configComune.raggioKm} km dal centro di {configComune.nomeComune.replace('Comune di ', '')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Info centro e raggio */}
-                <div className="bg-slate-800/60 p-4 rounded-lg border border-slate-700/50 space-y-3">
-                  <div className="flex items-center gap-2 text-cyan-400">
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200/60 space-y-3">
+                  <div className="flex items-center gap-2 text-yellow-700">
                     <Crosshair className="h-4 w-4" />
-                    <span className="text-xs font-mono uppercase tracking-wider">Centro Operativo</span>
+                    <span className="text-xs uppercase tracking-wider font-medium">{getCentroLabel(configComune)}</span>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs font-mono text-slate-400">
-                      LAT: <span className="text-cyan-300">{areaOperativa?.centro.latitudine?.toFixed(4) || NARO_LAT.toFixed(4)}</span>
+                    <p className="text-xs text-yellow-600">
+                      LAT: <span className="text-yellow-800 font-medium font-mono">{areaOperativa?.centro.latitudine?.toFixed(4) || configComune.latCentro.toFixed(4)}</span>
                     </p>
-                    <p className="text-xs font-mono text-slate-400">
-                      LNG: <span className="text-cyan-300">{areaOperativa?.centro.longitudine?.toFixed(4) || NARO_LNG.toFixed(4)}</span>
+                    <p className="text-xs text-yellow-600">
+                      LNG: <span className="text-yellow-800 font-medium font-mono">{areaOperativa?.centro.longitudine?.toFixed(4) || configComune.lngCentro.toFixed(4)}</span>
                     </p>
-                    <p className="text-xs font-mono text-slate-400">
-                      RAGGIO: <span className="text-cyan-300">{areaOperativa?.raggioKm || RAGGIO_KM} km</span>
+                    <p className="text-xs text-yellow-600">
+                      Raggio: <span className="text-yellow-800 font-medium font-mono">{areaOperativa?.raggioKm || configComune.raggioKm} km</span>
                     </p>
                   </div>
                   {/* Indicatore visuale raggio */}
                   <div className="relative h-24 flex items-center justify-center">
-                    <div className="absolute w-20 h-20 rounded-full border border-cyan-500/20 bg-cyan-500/5" />
-                    <div className="absolute w-14 h-14 rounded-full border border-cyan-500/30 bg-cyan-500/10" />
-                    <div className="absolute w-6 h-6 rounded-full bg-cyan-500/40 border border-cyan-400/50 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                    <div className="absolute w-20 h-20 rounded-full border border-yellow-400/20 bg-yellow-400/5" />
+                    <div className="absolute w-14 h-14 rounded-full border border-yellow-500/30 bg-yellow-500/10" />
+                    <div className="absolute w-6 h-6 rounded-full bg-yellow-500/40 border border-yellow-600/50 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-yellow-600" />
                     </div>
-                    <span className="absolute bottom-0 text-[9px] font-mono text-cyan-600">10km</span>
+                    <span className="absolute bottom-0 text-[9px] text-yellow-500">{configComune.raggioKm}km</span>
                   </div>
                 </div>
 
                 {/* Conteggio In Zona */}
-                <div className="bg-emerald-900/20 p-4 rounded-lg border border-emerald-500/30 space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400">
+                <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200/60 space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-700">
                     <CheckCircle className="h-4 w-4" />
-                    <span className="text-xs font-mono uppercase tracking-wider">In Zona</span>
+                    <span className="text-xs uppercase tracking-wider font-medium">Area di Competenza</span>
                   </div>
-                  <p className="text-4xl font-bold font-mono text-emerald-400">{inZona}</p>
-                  <p className="text-xs text-emerald-600 font-mono">Segnalazioni entro il raggio operativo</p>
+                  <p className="text-4xl font-bold text-emerald-700">{inZona}</p>
+                  <p className="text-xs text-emerald-600">Segnalazioni entro il raggio operativo</p>
                 </div>
 
                 {/* Conteggio Fuori Zona */}
-                <div className="bg-red-900/20 p-4 rounded-lg border border-red-500/30 space-y-2">
-                  <div className="flex items-center gap-2 text-red-400">
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200/60 space-y-2">
+                  <div className="flex items-center gap-2 text-red-700">
                     <AlertOctagon className="h-4 w-4" />
-                    <span className="text-xs font-mono uppercase tracking-wider">Fuori Zona</span>
+                    <span className="text-xs uppercase tracking-wider font-medium">Zona Critica</span>
                   </div>
-                  <p className="text-4xl font-bold font-mono text-red-400">{fuoriZonaCount}</p>
-                  <p className="text-xs text-red-600 font-mono">Oltre il raggio — azioni bloccate</p>
+                  <p className="text-4xl font-bold text-red-700">{fuoriZonaCount}</p>
+                  <p className="text-xs text-red-600">Oltre il raggio — azioni bloccate</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* ─── Riepilogo per Stato ────────────────────────────────────── */}
-          <Card className="bg-slate-900/80 border border-slate-700/50">
+          <Card className="border-yellow-200/60 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-                <Radio className="h-4 w-4 text-cyan-500" />
+              <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+                <Radio className="h-4 w-4 text-yellow-600" />
                 Riepilogo per Stato
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: 'Ricevute', val: statistiche?.perStato?.ricevuta || 0, Icona: Clock, sfondo: 'bg-sky-900/30', colore: 'text-sky-400', iconaCol: 'text-sky-500', bordo: 'border-sky-500/30' },
-                  { label: 'In lavorazione', val: statistiche?.perStato?.in_lavorazione || 0, Icona: TrendingUp, sfondo: 'bg-amber-900/30', colore: 'text-amber-400', iconaCol: 'text-amber-500', bordo: 'border-amber-500/30' },
-                  { label: 'Risolte', val: statistiche?.perStato?.risolta || 0, Icona: CheckCircle, sfondo: 'bg-emerald-900/30', colore: 'text-emerald-400', iconaCol: 'text-emerald-500', bordo: 'border-emerald-500/30' },
-                  { label: 'Archiviate', val: statistiche?.perStato?.archiviata || 0, Icona: Archive, sfondo: 'bg-slate-800/50', colore: 'text-slate-400', iconaCol: 'text-slate-500', bordo: 'border-slate-600/30' },
+                  { label: 'Ricevute', val: statistiche?.perStato?.ricevuta || 0, Icona: Clock, sfondo: 'bg-sky-50', colore: 'text-sky-800', iconaCol: 'text-sky-600', bordo: 'border-sky-200/60' },
+                  { label: 'In lavorazione', val: statistiche?.perStato?.in_lavorazione || 0, Icona: TrendingUp, sfondo: 'bg-amber-50', colore: 'text-amber-800', iconaCol: 'text-amber-600', bordo: 'border-amber-200/60' },
+                  { label: 'Risolte', val: statistiche?.perStato?.risolta || 0, Icona: CheckCircle, sfondo: 'bg-emerald-50', colore: 'text-emerald-800', iconaCol: 'text-emerald-600', bordo: 'border-emerald-200/60' },
+                  { label: 'Archiviate', val: statistiche?.perStato?.archiviata || 0, Icona: Archive, sfondo: 'bg-gray-50', colore: 'text-gray-800', iconaCol: 'text-gray-600', bordo: 'border-gray-200/60' },
                 ].map((item) => (
                   <div key={item.label} className={`flex items-center gap-3 p-3 rounded-lg ${item.sfondo} border ${item.bordo} transition-all hover:shadow-sm`}>
                     <item.Icona className={`h-6 w-6 ${item.iconaCol}`} />
                     <div>
-                      <p className={`text-2xl font-bold font-mono ${item.colore}`}>{item.val}</p>
-                      <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">{item.label}</p>
+                      <p className={`text-2xl font-bold ${item.colore}`}>{item.val}</p>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider">{item.label}</p>
                     </div>
                   </div>
                 ))}
@@ -818,21 +772,21 @@ export default function DashboardView() {
 
         {/* ═══════════ TAB SEGNALAZIONI ═══════════ */}
         <TabsContent value="segnalazioni">
-          <Card className="bg-slate-900/80 border border-slate-700/50">
+          <Card className="border-yellow-200/60 shadow-sm">
             <CardHeader className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-cyan-500" />
+                  <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-yellow-600" />
                     Gestione Segnalazioni
                   </CardTitle>
-                  <CardDescription className="text-slate-500 text-xs font-mono mt-1">
+                  <CardDescription className="text-yellow-600 text-xs mt-1">
                     Clicca su una riga per i dettagli. Usa il menu per cambiare stato.
                   </CardDescription>
                 </div>
                 <Button
                   size="sm"
-                  className="bg-cyan-600 hover:bg-cyan-700 text-white font-mono text-xs"
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white text-xs"
                   onClick={() => setTabAttiva('inserimento')}
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" />
@@ -841,17 +795,17 @@ export default function DashboardView() {
               </div>
               {/* ─── Barra di Ricerca Istantanea ──────────────────────── */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-yellow-400" />
                 <Input
                   placeholder="Cerca per titolo, descrizione o coordinate..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-9 h-9 bg-slate-800/60 border-slate-700/50 text-cyan-100 placeholder:text-slate-600 font-mono text-xs focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                  className="pl-9 pr-9 h-9 border-yellow-200/60 text-yellow-900 placeholder:text-yellow-400 text-xs focus:border-yellow-500/50 focus:ring-yellow-500/20"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => { setSearchQuery(''); setDebouncedSearch(''); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-400 hover:text-yellow-700 transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -861,63 +815,63 @@ export default function DashboardView() {
             <CardContent>
               {caricamentoSegnalazioni ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin h-8 w-8 border-4 border-cyan-500 border-t-transparent rounded-full" />
+                  <div className="animate-spin h-8 w-8 border-4 border-yellow-500 border-t-transparent rounded-full" />
                 </div>
               ) : segnalazioni.length === 0 ? (
-                <div className="text-center py-12 text-slate-600">
+                <div className="text-center py-12 text-yellow-500">
                   <Dog className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="font-mono text-sm">Nessuna segnalazione trovata</p>
+                  <p className="text-sm">Nessuna segnalazione trovata</p>
                 </div>
               ) : (
                 <ScrollArea className="max-h-[500px]">
                   <Table>
                     <TableHeader>
-                      <TableRow className="hover:bg-transparent border-slate-700/50">
-                        <TableHead className="text-slate-400 font-mono text-xs">Titolo</TableHead>
-                        <TableHead className="text-slate-400 font-mono text-xs hidden md:table-cell">Urgenza</TableHead>
-                        <TableHead className="text-slate-400 font-mono text-xs">Stato</TableHead>
-                        <TableHead className="text-slate-400 font-mono text-xs hidden sm:table-cell">Zona</TableHead>
-                        <TableHead className="text-slate-400 font-mono text-xs hidden lg:table-cell">Data</TableHead>
-                        <TableHead className="text-slate-400 font-mono text-xs">Azioni</TableHead>
+                      <TableRow className="hover:bg-transparent border-yellow-100">
+                        <TableHead className="text-yellow-700 text-xs">Titolo</TableHead>
+                        <TableHead className="text-yellow-700 text-xs hidden md:table-cell">Urgenza</TableHead>
+                        <TableHead className="text-yellow-700 text-xs">Stato</TableHead>
+                        <TableHead className="text-yellow-700 text-xs hidden sm:table-cell">Zona</TableHead>
+                        <TableHead className="text-yellow-700 text-xs hidden lg:table-cell">Data</TableHead>
+                        <TableHead className="text-yellow-700 text-xs">Azioni</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {segnalazioni.map((seg) => (
                         <TableRow
                           key={seg.id}
-                          className={`cursor-pointer transition-colors border-slate-700/30 ${
+                          className={`cursor-pointer transition-colors border-yellow-100/60 ${
                             seg.fuoriZona
-                              ? 'bg-red-950/30 hover:bg-red-950/50'
-                              : 'hover:bg-slate-800/50'
+                              ? 'bg-red-50/60 hover:bg-red-100/60'
+                              : 'hover:bg-yellow-50/60'
                           }`}
                           onClick={() => selezionaSegnalazione(seg.id)}
                         >
-                          <TableCell className="font-mono text-slate-200 text-xs max-w-[200px] truncate">
+                          <TableCell className="text-yellow-900 text-xs max-w-[200px] truncate">
                             {seg.titolo}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
-                            <Badge className={`${coloriUrgenzaDark[seg.urgenza]} text-[10px] font-mono`}>
-                              {etichetteUrgenza[seg.urgenza]}
+                            <Badge className={`${COLORI_URGENZA_BADGE[seg.urgenza]} text-[10px] border-0`}>
+                              {ETICHETTE_URGENZA[seg.urgenza]}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge className={`${coloriStatoDark[seg.stato]} text-[10px] font-mono`}>
-                              {etichetteStato[seg.stato]}
+                            <Badge className={`${COLORI_STATO_BADGE[seg.stato]} text-[10px] border-0`}>
+                              {ETICHETTE_STATO[seg.stato]}
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
                             {seg.fuoriZona ? (
-                              <Badge className="bg-red-900/60 text-red-300 border border-red-600/50 text-[10px] font-mono">
+                              <Badge className="bg-red-100 text-red-800 text-[10px] border-0">
                                 <AlertOctagon className="h-3 w-3 mr-1" />
                                 Fuori Zona
                               </Badge>
                             ) : (
-                              <Badge className="bg-emerald-900/60 text-emerald-300 border border-emerald-600/50 text-[10px] font-mono">
+                              <Badge className="bg-emerald-100 text-emerald-800 text-[10px] border-0">
                                 In Zona
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell className="text-xs text-slate-500 font-mono hidden lg:table-cell">
+                          <TableCell className="text-xs text-gray-500 hidden lg:table-cell">
                             {new Date(seg.createdAt).toLocaleDateString('it-IT')}
                           </TableCell>
                           <TableCell>
@@ -927,18 +881,18 @@ export default function DashboardView() {
                                 onValueChange={(stato) => handleStatusChange(seg, stato)}
                                 disabled={seg.fuoriZona}
                               >
-                                <SelectTrigger className={`w-[130px] h-7 text-[10px] font-mono ${
+                                <SelectTrigger className={`w-[130px] h-7 text-[10px] ${
                                   seg.fuoriZona
-                                    ? 'border-red-800/50 bg-red-950/30 text-red-500 opacity-60'
-                                    : 'border-slate-700/50 bg-slate-800/60 text-slate-200'
+                                    ? 'border-red-200 bg-red-50 text-red-400 opacity-60'
+                                    : 'border-yellow-200 bg-white text-yellow-800'
                                 }`}>
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-slate-900 border-slate-700">
-                                  <SelectItem value="ricevuta" className="text-slate-200 font-mono text-xs focus:bg-slate-800">Ricevuta</SelectItem>
-                                  <SelectItem value="in_lavorazione" className="text-slate-200 font-mono text-xs focus:bg-slate-800">In lavorazione</SelectItem>
-                                  <SelectItem value="risolta" className="text-slate-200 font-mono text-xs focus:bg-slate-800">Risolta</SelectItem>
-                                  <SelectItem value="archiviata" className="text-slate-200 font-mono text-xs focus:bg-slate-800">Archiviata</SelectItem>
+                                <SelectContent className="bg-white border-yellow-200">
+                                  <SelectItem value="ricevuta" className="text-yellow-800 text-xs focus:bg-yellow-50">Ricevuta</SelectItem>
+                                  <SelectItem value="in_lavorazione" className="text-yellow-800 text-xs focus:bg-yellow-50">In lavorazione</SelectItem>
+                                  <SelectItem value="risolta" className="text-yellow-800 text-xs focus:bg-yellow-50">Risolta</SelectItem>
+                                  <SelectItem value="archiviata" className="text-yellow-800 text-xs focus:bg-yellow-50">Archiviata</SelectItem>
                                 </SelectContent>
                               </Select>
                               {/* ─── Cronologia Popover ─────────────────── */}
@@ -957,35 +911,35 @@ export default function DashboardView() {
 
         {/* ═══════════ TAB UTENTI ═══════════ */}
         <TabsContent value="utenti">
-          <Card className="bg-slate-900/80 border border-slate-700/50">
+          <Card className="border-yellow-200/60 shadow-sm">
             <CardHeader className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-                    <Users className="h-4 w-4 text-cyan-500" />
+                  <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-yellow-600" />
                     Utenti Segnalatori
                   </CardTitle>
-                  <CardDescription className="text-slate-500 text-xs font-mono mt-1">
+                  <CardDescription className="text-yellow-600 text-xs mt-1">
                     Cittadini che hanno inviato segnalazioni, raggruppati per email
                   </CardDescription>
                 </div>
-                <Badge className="bg-cyan-900/60 text-cyan-300 border border-cyan-700/50 text-[10px] font-mono self-start">
+                <Badge className="bg-yellow-100 text-yellow-800 text-[10px] self-start border-0">
                   {datiUtenti?.utenti?.length || 0} utenti
                 </Badge>
               </div>
               {/* ─── Barra di Ricerca Utenti ──────────────────────── */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-yellow-400" />
                 <Input
                   placeholder="Cerca per nome, cognome o email..."
                   value={utentiSearch}
                   onChange={(e) => setUtentiSearch(e.target.value)}
-                  className="pl-9 pr-9 h-9 bg-slate-800/60 border-slate-700/50 text-cyan-100 placeholder:text-slate-600 font-mono text-xs focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                  className="pl-9 pr-9 h-9 border-yellow-200/60 text-yellow-900 placeholder:text-yellow-400 text-xs focus:border-yellow-500/50 focus:ring-yellow-500/20"
                 />
                 {utentiSearch && (
                   <button
                     onClick={() => { setUtentiSearch(''); setDebouncedUtentiSearch(''); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-400 hover:text-yellow-700 transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -995,12 +949,12 @@ export default function DashboardView() {
             <CardContent>
               {caricamentoUtenti ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin h-8 w-8 border-4 border-cyan-500 border-t-transparent rounded-full" />
+                  <div className="animate-spin h-8 w-8 border-4 border-yellow-500 border-t-transparent rounded-full" />
                 </div>
               ) : !datiUtenti?.utenti || datiUtenti.utenti.length === 0 ? (
-                <div className="text-center py-12 text-slate-600">
+                <div className="text-center py-12 text-yellow-500">
                   <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="font-mono text-sm">Nessun utente trovato</p>
+                  <p className="text-sm">Nessun utente trovato</p>
                 </div>
               ) : (
                 <ScrollArea className="max-h-[600px]">
@@ -1019,7 +973,7 @@ export default function DashboardView() {
                           key={utente.email}
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="bg-slate-800/40 border border-slate-700/40 rounded-lg overflow-hidden hover:border-slate-600/50 transition-all"
+                          className="bg-white border border-yellow-100 rounded-lg overflow-hidden hover:border-yellow-200 transition-all"
                         >
                           {/* ─── Intestazione Utente ──────────────────── */}
                           <div
@@ -1027,17 +981,17 @@ export default function DashboardView() {
                             onClick={() => setUtenteEspanso(isEspanso ? null : utente.email.toLowerCase())}
                           >
                             {/* Avatar */}
-                            <div className="h-10 w-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center flex-shrink-0">
-                              <span className="text-cyan-400 font-mono text-sm font-bold">
+                            <div className="h-10 w-10 rounded-full bg-yellow-100 border border-yellow-200 flex items-center justify-center flex-shrink-0">
+                              <span className="text-yellow-700 text-sm font-bold">
                                 {utente.nome.charAt(0)}{utente.cognome.charAt(0)}
                               </span>
                             </div>
                             {/* Info principali */}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-mono text-slate-200 font-medium">
+                              <p className="text-sm text-yellow-900 font-medium">
                                 {utente.nome} {utente.cognome}
                               </p>
-                              <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono mt-0.5">
+                              <div className="flex items-center gap-3 text-[10px] text-yellow-500 mt-0.5">
                                 <span className="flex items-center gap-1">
                                   <Mail className="h-3 w-3" />
                                   {utente.email}
@@ -1053,21 +1007,21 @@ export default function DashboardView() {
                             {/* Statistiche rapide */}
                             <div className="flex items-center gap-3 flex-shrink-0">
                               <div className="text-right">
-                                <p className="text-lg font-bold font-mono text-cyan-400">{utente.segnalazioni.length}</p>
-                                <p className="text-[9px] text-slate-500 font-mono uppercase">Segnalazioni</p>
+                                <p className="text-lg font-bold text-yellow-700">{utente.segnalazioni.length}</p>
+                                <p className="text-[9px] text-yellow-500 uppercase">Segnalazioni</p>
                               </div>
                               {ultimaSegnalazione && (
                                 <div className="text-right hidden sm:block">
-                                  <p className="text-[10px] text-slate-400 font-mono">
+                                  <p className="text-[10px] text-yellow-600">
                                     {new Date(ultimaSegnalazione.createdAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                                   </p>
-                                  <p className="text-[9px] text-slate-600 font-mono uppercase">Ultima</p>
+                                  <p className="text-[9px] text-yellow-400 uppercase">Ultima</p>
                                 </div>
                               )}
                               {isEspanso ? (
-                                <ChevronUp className="h-4 w-4 text-slate-500" />
+                                <ChevronUp className="h-4 w-4 text-yellow-400" />
                               ) : (
-                                <ChevronDown className="h-4 w-4 text-slate-500" />
+                                <ChevronDown className="h-4 w-4 text-yellow-400" />
                               )}
                             </div>
                           </div>
@@ -1082,27 +1036,27 @@ export default function DashboardView() {
                                 transition={{ duration: 0.2 }}
                                 className="overflow-hidden"
                               >
-                                <div className="px-4 pb-4 space-y-3 border-t border-slate-700/30 pt-3">
+                                <div className="px-4 pb-4 space-y-3 border-t border-yellow-100 pt-3">
                                   {/* Statistiche per urgenza e stato */}
                                   <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-slate-800/60 p-3 rounded-lg border border-slate-700/30">
-                                      <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider mb-2">Per Urgenza</p>
+                                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                                      <p className="text-[10px] text-yellow-600 uppercase tracking-wider mb-2">Per Urgenza</p>
                                       <div className="space-y-1">
                                         {Object.entries(perUrgenza).map(([urg, count]) => (
                                           <div key={urg} className="flex items-center justify-between">
-                                            <Badge className={`${coloriUrgenzaDark[urg]} text-[9px] font-mono`}>{etichetteUrgenza[urg]}</Badge>
-                                            <span className="text-xs font-mono text-slate-300">{count}</span>
+                                            <Badge className={`${COLORI_URGENZA_BADGE[urg]} text-[9px] border-0`}>{ETICHETTE_URGENZA[urg]}</Badge>
+                                            <span className="text-xs text-yellow-700">{count}</span>
                                           </div>
                                         ))}
                                       </div>
                                     </div>
-                                    <div className="bg-slate-800/60 p-3 rounded-lg border border-slate-700/30">
-                                      <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider mb-2">Per Stato</p>
+                                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                                      <p className="text-[10px] text-yellow-600 uppercase tracking-wider mb-2">Per Stato</p>
                                       <div className="space-y-1">
                                         {Object.entries(perStato).map(([stato, count]) => (
                                           <div key={stato} className="flex items-center justify-between">
-                                            <Badge className={`${coloriStatoDark[stato]} text-[9px] font-mono`}>{etichetteStato[stato]}</Badge>
-                                            <span className="text-xs font-mono text-slate-300">{count}</span>
+                                            <Badge className={`${COLORI_STATO_BADGE[stato]} text-[9px] border-0`}>{ETICHETTE_STATO[stato]}</Badge>
+                                            <span className="text-xs text-yellow-700">{count}</span>
                                           </div>
                                         ))}
                                       </div>
@@ -1111,22 +1065,22 @@ export default function DashboardView() {
 
                                   {/* Elenco segnalazioni dell'utente */}
                                   <div>
-                                    <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider mb-2">Elenco Segnalazioni</p>
+                                    <p className="text-[10px] text-yellow-600 uppercase tracking-wider mb-2">Elenco Segnalazioni</p>
                                     <div className="space-y-1.5">
                                       {utente.segnalazioni.map((seg) => (
                                         <div
                                           key={seg.id}
-                                          className="flex items-center justify-between p-2 rounded-md bg-slate-800/40 border border-slate-700/20 cursor-pointer hover:bg-slate-700/40 transition-colors"
+                                          className="flex items-center justify-between p-2 rounded-md bg-white border border-yellow-100/60 cursor-pointer hover:bg-yellow-50 transition-colors"
                                           onClick={() => selezionaSegnalazione(seg.id)}
                                         >
                                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                                            <FileText className="h-3 w-3 text-slate-500 flex-shrink-0" />
-                                            <span className="text-xs font-mono text-slate-300 truncate">{seg.titolo}</span>
+                                            <FileText className="h-3 w-3 text-yellow-400 flex-shrink-0" />
+                                            <span className="text-xs text-yellow-800 truncate">{seg.titolo}</span>
                                           </div>
                                           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                                            <Badge className={`${coloriUrgenzaDark[seg.urgenza]} text-[9px] font-mono`}>{etichetteUrgenza[seg.urgenza]}</Badge>
-                                            <Badge className={`${coloriStatoDark[seg.stato]} text-[9px] font-mono`}>{etichetteStato[seg.stato]}</Badge>
-                                            <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                                            <Badge className={`${COLORI_URGENZA_BADGE[seg.urgenza]} text-[9px] border-0`}>{ETICHETTE_URGENZA[seg.urgenza]}</Badge>
+                                            <Badge className={`${COLORI_STATO_BADGE[seg.stato]} text-[9px] border-0`}>{ETICHETTE_STATO[seg.stato]}</Badge>
+                                            <span className="text-[10px] text-yellow-500 hidden sm:inline">
                                               {new Date(seg.createdAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                                             </span>
                                           </div>
@@ -1150,14 +1104,14 @@ export default function DashboardView() {
 
         {/* ═══════════ TAB NOTIFICHE ═══════════ */}
         <TabsContent value="notifiche">
-          <Card className="bg-slate-900/80 border border-slate-700/50">
+          <Card className="border-yellow-200/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-cyan-500" />
-                  Notifiche Operative
+                <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-yellow-600" />
+                  Notifiche
                 </CardTitle>
-                <CardDescription className="text-slate-500 text-xs font-mono mt-1">
+                <CardDescription className="text-yellow-600 text-xs mt-1">
                   Aggiornamenti e allerta segnalazioni
                 </CardDescription>
               </div>
@@ -1169,7 +1123,7 @@ export default function DashboardView() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-slate-700 text-slate-400 hover:bg-slate-800 font-mono text-xs"
+                          className="border-yellow-200 text-yellow-700 hover:bg-yellow-50 text-xs"
                           onClick={async () => {
                             if ('Notification' in window) {
                               const perm = await Notification.requestPermission();
@@ -1182,7 +1136,7 @@ export default function DashboardView() {
                           Attiva Notifiche
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 border-slate-700 text-slate-200 text-xs">
+                      <TooltipContent className="bg-white border-yellow-200 text-yellow-800 text-xs">
                         Ricevi allerte nel browser per segnalazioni critiche
                       </TooltipContent>
                     </TooltipUI>
@@ -1192,7 +1146,7 @@ export default function DashboardView() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-slate-700 text-slate-400 hover:bg-slate-800 font-mono text-xs"
+                    className="border-yellow-200 text-yellow-700 hover:bg-yellow-50 text-xs"
                     onClick={() => segnaNotificheLette.mutate()}
                   >
                     <BellOff className="mr-1 h-3.5 w-3.5" />
@@ -1203,9 +1157,9 @@ export default function DashboardView() {
             </CardHeader>
             <CardContent>
               {notifiche.length === 0 ? (
-                <div className="text-center py-12 text-slate-600">
+                <div className="text-center py-12 text-yellow-500">
                   <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="font-mono text-sm">Nessuna notifica</p>
+                  <p className="text-sm">Nessuna notifica</p>
                 </div>
               ) : (
                 <ScrollArea className="max-h-[500px]">
@@ -1228,10 +1182,10 @@ export default function DashboardView() {
                             key={not.id}
                             className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
                               not.letta
-                                ? 'bg-slate-800/30 border-slate-700/30 hover:bg-slate-800/50'
+                                ? 'bg-white border-yellow-100 hover:bg-yellow-50'
                                 : isUrgent
-                                  ? 'bg-red-950/40 border-red-500/30 hover:bg-red-950/60'
-                                  : 'bg-slate-800/60 border-slate-600/40 hover:bg-slate-700/50'
+                                  ? 'bg-red-50 border-red-200 hover:bg-red-100'
+                                  : 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100'
                             }`}
                             onClick={() => {
                               if (!not.letta) segnaNotificheLette.mutate([not.id]);
@@ -1242,16 +1196,16 @@ export default function DashboardView() {
                               {/* Indicatore non letta */}
                               {!not.letta && (
                                 <div className={`h-2.5 w-2.5 rounded-full mt-1.5 flex-shrink-0 ${
-                                  isUrgent ? 'bg-red-500 animate-pulse' : 'bg-cyan-500'
+                                  isUrgent ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
                                 }`} />
                               )}
                               <div className="flex-1 min-w-0">
-                                <p className={`text-xs font-mono ${
-                                  not.letta ? 'text-slate-400' : isUrgent ? 'text-red-300 font-semibold' : 'text-slate-200 font-medium'
+                                <p className={`text-xs ${
+                                  not.letta ? 'text-yellow-600' : isUrgent ? 'text-red-800 font-semibold' : 'text-yellow-800 font-medium'
                                 }`}>
                                   {not.messaggio}
                                 </p>
-                                <p className="text-[10px] text-slate-600 font-mono mt-1">
+                                <p className="text-[10px] text-yellow-400 mt-1">
                                   {new Date(not.createdAt).toLocaleDateString('it-IT', {
                                     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
                                   })}
@@ -1282,23 +1236,23 @@ export default function DashboardView() {
 
       {/* ─── Dialog Fuori Zona ──────────────────────────────────────────── */}
       <AlertDialog open={fuoriZonaDialog.open} onOpenChange={(open) => setFuoriZonaDialog({ open, id: null })}>
-        <AlertDialogContent className="bg-slate-900 border-red-500/30">
+        <AlertDialogContent className="bg-white border-red-200">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-400 flex items-center gap-2 font-mono">
+            <AlertDialogTitle className="text-red-700 flex items-center gap-2">
               <AlertOctagon className="h-5 w-5" />
               Segnalazione Fuori Zona
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-400 font-mono text-sm">
-              Questa segnalazione è fuori dall&apos;area operativa del Comune di Naro.
+            <AlertDialogDescription className="text-yellow-700 text-sm">
+              {getFuoriZonaMessage(configComune)}
               Le azioni amministrative sono bloccate per i casi fuori zona.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 font-mono">
+            <AlertDialogCancel className="border-yellow-200 text-yellow-700 hover:bg-yellow-50">
               Chiudi
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700 text-white font-mono"
+              className="bg-red-600 hover:bg-red-700 text-white"
               onClick={() => setFuoriZonaDialog({ open: false, id: null })}
             >
               Ho capito
@@ -1327,28 +1281,21 @@ function CronologiaPopover({ segnalazioneId }: { segnalazioneId: string }) {
     enabled: open,
   });
 
-  const etichetteStato2: Record<string, string> = {
-    ricevuta: 'Ricevuta',
-    in_lavorazione: 'In lavorazione',
-    risolta: 'Risolta',
-    archiviata: 'Archiviata',
-  };
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0 text-slate-500 hover:text-cyan-400 hover:bg-slate-800"
+          className="h-7 w-7 p-0 text-yellow-400 hover:text-yellow-700 hover:bg-yellow-50"
           onClick={(e) => e.stopPropagation()}
         >
           <History className="h-3.5 w-3.5" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 bg-slate-900 border-slate-700/50 p-0" align="end">
-        <div className="p-3 border-b border-slate-700/50">
-          <h4 className="text-xs font-mono text-cyan-400 flex items-center gap-1.5">
+      <PopoverContent className="w-72 bg-white border-yellow-200 p-0" align="end">
+        <div className="p-3 border-b border-yellow-100">
+          <h4 className="text-xs text-yellow-700 flex items-center gap-1.5 font-medium">
             <History className="h-3.5 w-3.5" />
             Cronologia Modifiche
           </h4>
@@ -1356,34 +1303,34 @@ function CronologiaPopover({ segnalazioneId }: { segnalazioneId: string }) {
         <div className="max-h-60 overflow-y-auto">
           {isLoading ? (
             <div className="p-4 text-center">
-              <Loader2 className="h-4 w-4 animate-spin text-cyan-500 mx-auto" />
+              <Loader2 className="h-4 w-4 animate-spin text-yellow-500 mx-auto" />
             </div>
           ) : !logs || logs.length === 0 ? (
-            <div className="p-4 text-center text-slate-600 text-xs font-mono">Nessuna modifica registrata</div>
+            <div className="p-4 text-center text-yellow-400 text-xs">Nessuna modifica registrata</div>
           ) : (
             <div className="relative p-3">
               {/* Linea verticale */}
-              <div className="absolute left-[13px] top-5 bottom-3 w-px bg-slate-700/50" />
+              <div className="absolute left-[13px] top-5 bottom-3 w-px bg-yellow-200" />
               <div className="space-y-3">
                 {logs.map((log, i) => (
                   <div key={log.id} className="relative flex items-start gap-3">
                     <div className={`flex-shrink-0 h-4 w-4 rounded-full border-2 z-10 mt-0.5 ${
-                      i === 0 ? 'border-cyan-500 bg-cyan-500/20' : 'border-slate-600 bg-slate-800'
+                      i === 0 ? 'border-yellow-600 bg-yellow-100' : 'border-yellow-300 bg-white'
                     }`}>
-                      {i === 0 && <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 m-auto mt-px" />}
+                      {i === 0 && <div className="h-1.5 w-1.5 rounded-full bg-yellow-600 m-auto mt-px" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[10px] text-slate-500 font-mono">
+                      <div className="text-[10px] text-yellow-500">
                         {new Date(log.createdAt).toLocaleDateString('it-IT', {
                           day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
                         })}
                       </div>
-                      <div className="text-xs text-slate-300 font-mono">
-                        <span className="text-cyan-400">{etichetteStato2[log.valorePrecedente] || log.valorePrecedente}</span>
-                        <ChevronRight className="inline h-3 w-3 mx-0.5 text-slate-600" />
-                        <span className="text-emerald-400">{etichetteStato2[log.valoreNuovo] || log.valoreNuovo}</span>
+                      <div className="text-xs text-yellow-800">
+                        <span className="text-yellow-600">{ETICHETTE_STATO[log.valorePrecedente] || log.valorePrecedente}</span>
+                        <ChevronRight className="inline h-3 w-3 mx-0.5 text-yellow-300" />
+                        <span className="text-emerald-600">{ETICHETTE_STATO[log.valoreNuovo] || log.valoreNuovo}</span>
                       </div>
-                      <div className="text-[10px] text-slate-600 font-mono mt-0.5">
+                      <div className="text-[10px] text-yellow-400 mt-0.5">
                         da {log.modificatoDa}
                       </div>
                     </div>
@@ -1428,7 +1375,7 @@ function InserimentoManualeForm({
   const lngNum = parseFloat(lng);
   const hasCoords = !isNaN(latNum) && !isNaN(lngNum);
   const raggioOperativo = hasCoords ? distanzaKm(NARO_LAT, NARO_LNG, latNum, lngNum) : null;
-  const isFuoriZona = raggioOperativo !== null ? raggioOperativo > RAGGIO_KM : null;
+  const isFuoriZona = raggioOperativo !== null ? raggioOperativo > RAGGIO_OPERATIVO_KM : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1456,16 +1403,16 @@ function InserimentoManualeForm({
     });
   };
 
-  const inputClass = "h-9 bg-slate-800/60 border-slate-700/50 text-cyan-100 placeholder:text-slate-600 font-mono text-xs focus:border-cyan-500/50 focus:ring-cyan-500/20";
-  const labelClass = "text-slate-400 text-xs font-mono";
+  const inputClass = "h-9 border-yellow-200/60 text-yellow-900 placeholder:text-yellow-400 text-xs focus:border-yellow-500/50 focus:ring-yellow-500/20";
+  const labelClass = "text-yellow-700 text-xs";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Sezione Coordinate e Posizione */}
-      <Card className="bg-slate-900/80 border border-cyan-500/20">
+      <Card className="border-yellow-200/60 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-            <Crosshair className="h-4 w-4 text-cyan-500" />
+          <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+            <Crosshair className="h-4 w-4 text-yellow-600" />
             Posizione e Coordinate
           </CardTitle>
         </CardHeader>
@@ -1497,7 +1444,7 @@ function InserimentoManualeForm({
           <div className="space-y-1.5">
             <Label className={labelClass}>Indirizzo (opzionale)</Label>
             <Input
-              placeholder="es. Via Roma 15, Naro"
+              placeholder={getPlaceholderIndirizzo(configComune)}
               value={indirizzo}
               onChange={(e) => setIndirizzo(e.target.value)}
               className={inputClass}
@@ -1507,16 +1454,16 @@ function InserimentoManualeForm({
           {hasCoords && (
             <div className={`flex items-center gap-3 p-3 rounded-lg border ${
               isFuoriZona
-                ? 'bg-red-950/30 border-red-500/30'
-                : 'bg-emerald-950/30 border-emerald-500/30'
+                ? 'bg-red-50 border-red-200'
+                : 'bg-emerald-50 border-emerald-200'
             }`}>
-              <Radar className={`h-4 w-4 ${isFuoriZona ? 'text-red-400' : 'text-emerald-400'}`} />
+              <Radar className={`h-4 w-4 ${isFuoriZona ? 'text-red-600' : 'text-emerald-600'}`} />
               <div className="flex-1">
-                <p className={`text-xs font-mono ${isFuoriZona ? 'text-red-300' : 'text-emerald-300'}`}>
+                <p className={`text-xs ${isFuoriZona ? 'text-red-700' : 'text-emerald-700'}`}>
                   Distanza dal centro: {raggioOperativo?.toFixed(1)} km
                 </p>
-                <p className={`text-[10px] font-mono ${isFuoriZona ? 'text-red-500' : 'text-emerald-500'}`}>
-                  {isFuoriZona ? '⚠ FUORI ZONA — Oltre il raggio operativo' : '✓ IN ZONA — Entro il raggio operativo'}
+                <p className={`text-[10px] ${isFuoriZona ? 'text-red-500' : 'text-emerald-500'}`}>
+                  {isFuoriZona ? '⚠ Fuori zona — Oltre il raggio operativo' : '✓ In zona — Entro il raggio operativo'}
                 </p>
               </div>
             </div>
@@ -1525,10 +1472,10 @@ function InserimentoManualeForm({
       </Card>
 
       {/* Sezione Dettagli Segnalazione */}
-      <Card className="bg-slate-900/80 border border-slate-700/50">
+      <Card className="border-yellow-200/60 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-            <Dog className="h-4 w-4 text-cyan-500" />
+          <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+            <Dog className="h-4 w-4 text-yellow-600" />
             Dettagli Segnalazione
           </CardTitle>
         </CardHeader>
@@ -1559,11 +1506,11 @@ function InserimentoManualeForm({
                 <SelectTrigger className={inputClass}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-700">
-                  <SelectItem value="bassa" className="text-slate-200 font-mono text-xs">Bassa</SelectItem>
-                  <SelectItem value="media" className="text-slate-200 font-mono text-xs">Media</SelectItem>
-                  <SelectItem value="alta" className="text-slate-200 font-mono text-xs">Alta</SelectItem>
-                  <SelectItem value="critica" className="text-slate-200 font-mono text-xs">Critica</SelectItem>
+                <SelectContent className="bg-white border-yellow-200">
+                  <SelectItem value="bassa" className="text-yellow-800 text-xs focus:bg-yellow-50">Bassa</SelectItem>
+                  <SelectItem value="media" className="text-yellow-800 text-xs focus:bg-yellow-50">Media</SelectItem>
+                  <SelectItem value="alta" className="text-yellow-800 text-xs focus:bg-yellow-50">Alta</SelectItem>
+                  <SelectItem value="critica" className="text-yellow-800 text-xs focus:bg-yellow-50">Critica</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1582,10 +1529,10 @@ function InserimentoManualeForm({
               <SelectTrigger className={`${inputClass} w-full md:w-1/3`}>
                 <SelectValue placeholder="Seleziona taglia" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700">
-                <SelectItem value="piccola" className="text-slate-200 font-mono text-xs">Piccola (fino a 10kg)</SelectItem>
-                <SelectItem value="media" className="text-slate-200 font-mono text-xs">Media (10-25kg)</SelectItem>
-                <SelectItem value="grande" className="text-slate-200 font-mono text-xs">Grande (oltre 25kg)</SelectItem>
+              <SelectContent className="bg-white border-yellow-200">
+                <SelectItem value="piccola" className="text-yellow-800 text-xs focus:bg-yellow-50">Piccola (fino a 10kg)</SelectItem>
+                <SelectItem value="media" className="text-yellow-800 text-xs focus:bg-yellow-50">Media (10-25kg)</SelectItem>
+                <SelectItem value="grande" className="text-yellow-800 text-xs focus:bg-yellow-50">Grande (oltre 25kg)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1593,10 +1540,10 @@ function InserimentoManualeForm({
       </Card>
 
       {/* Sezione Dati Segnalatore */}
-      <Card className="bg-slate-900/80 border border-slate-700/50">
+      <Card className="border-yellow-200/60 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-sm font-mono text-cyan-300 flex items-center gap-2">
-            <Shield className="h-4 w-4 text-cyan-500" />
+          <CardTitle className="text-sm text-yellow-800 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-yellow-600" />
             Dati Segnalatore
           </CardTitle>
         </CardHeader>
@@ -1627,7 +1574,7 @@ function InserimentoManualeForm({
         <Button
           type="submit"
           disabled={isPending}
-          className="bg-cyan-600 hover:bg-cyan-700 text-white font-mono text-xs min-w-[200px] h-10"
+          className="bg-yellow-600 hover:bg-yellow-700 text-white text-xs min-w-[200px] h-10"
         >
           {isPending ? (
             <>
