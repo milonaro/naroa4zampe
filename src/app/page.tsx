@@ -21,6 +21,7 @@ import ChatAIView from '@/components/ChatAIView';
 import DettaglioSegnalazione from '@/components/DettaglioSegnalazione';
 import SetupView from '@/components/SetupView';
 import Footer from '@/components/Footer';
+import CookieBanner from '@/components/CookieBanner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Componente provider per React Query
@@ -101,8 +102,13 @@ function ContenutoPrincipale() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-amber-50/50 to-white">
+      {/* Skip link per accessibilità */}
+      <a href="#main-content" className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[10000]">
+        Vai al contenuto principale
+      </a>
+
       {vistaAttuale !== 'setup' && <Header />}
-      <main className="flex-1 overflow-x-hidden">
+      <main id="main-content" className="flex-1 overflow-x-hidden">
         <ErrorBoundary>
           <AnimatePresence mode="wait">
             <motion.div
@@ -120,6 +126,7 @@ function ContenutoPrincipale() {
       </main>
       {vistaAttuale !== 'setup' && <Footer />}
       <DettaglioSegnalazione />
+      <CookieBanner />
     </div>
   );
 }
