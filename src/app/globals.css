@@ -1,4 +1,8 @@
 @import "tailwindcss";
+
+/* Font Titillium Web - Font ufficiale della PA italiana */
+@import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap');
+
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -78,6 +82,13 @@
   --sidebar-border: oklch(0.92 0.02 85);
   --sidebar-ring: oklch(0.65 0.16 85);
 }
+
+  /* Colori Design System Italia - PA */
+  --color-pa-blue: #0066CC;
+  --color-pa-blue-dark: #004080;
+  --color-pa-success: #008a4b;
+  --color-pa-warning: #ff9900;
+  --color-pa-danger: #cc334d;
 
 /* Tema scuro con toni giallo arenario caldi */
 .dark {
@@ -509,4 +520,34 @@
 
 .scrollbar-scuro::-webkit-scrollbar-thumb:hover {
   background: rgba(245, 158, 11, 0.6);
+}
+
+/* === ACCESSIBILITÀ WCAG 2.1 AA === */
+
+/* Focus visibile per navigazione da tastiera */
+:focus-visible {
+  outline: 3px solid #1A3A5C;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Contrasto minimo 4.5:1 per testi */
+.text-muted-foreground {
+  color: oklch(0.45 0.04 65) !important;
+}
+
+/* Skip link per accessibilità */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #0066CC;
+  color: white;
+  padding: 8px 16px;
+  z-index: 10000;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 0;
 }
