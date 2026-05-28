@@ -137,7 +137,7 @@ export default function MappaView() {
   const filtriAttivi = !!(filtri.stato || filtri.urgenza || filtri.motivazione);
 
   return (
-    <div className="space-y-4 pb-6">
+    <div className="container mx-auto px-4 space-y-4 pb-6">
       {/* Intestazione */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -273,7 +273,7 @@ export default function MappaView() {
       </div>
 
       {/* ── MAPPA FULL-WIDTH ── */}
-      <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm -mx-4 md:mx-0">
+      <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
         <MappaLeaflet
           segnalazioni={segnalazioni}
           segnalazioneHover={segnalazioneHover}
