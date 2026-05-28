@@ -706,7 +706,7 @@ export default function SegnalaView() {
                           />
                         )}
                       />
-                      <Label htmlFor="consensoPrivacy" dangerouslySetInnerHTML={{ __html: 'Ho letto e accetto la <a href="/privacy-policy" target="_blank" class="text-primary hover:underline font-medium">Privacy Policy</a> *' }}></Label>
+                      <Label htmlFor="consensoPrivacy" dangerouslySetInnerHTML={{ __html: 'Ho letto e accetto la <a href="/privacy-policy" target="_blank" class="text-primary hover:underline font-medium">Privacy Policy</a> *' }} />
                     {errors.consensoPrivacy && (
                       <p className="text-sm text-red-500 flex items-center gap-1">
                         <Shield className="h-3 w-3" />{errors.consensoPrivacy.message}
