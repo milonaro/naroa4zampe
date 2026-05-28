@@ -1,8 +1,7 @@
-@import "tailwindcss";
-
 /* Font Titillium Web - Font ufficiale della PA italiana */
 @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap');
 
+@import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -83,12 +82,14 @@
   --sidebar-ring: oklch(0.65 0.16 85);
 }
 
-  /* Colori Design System Italia - PA */
+/* Colori Design System Italia - PA */
+:root {
   --color-pa-blue: #0066CC;
   --color-pa-blue-dark: #004080;
   --color-pa-success: #008a4b;
   --color-pa-warning: #ff9900;
   --color-pa-danger: #cc334d;
+}
 
 /* Tema scuro con toni giallo arenario caldi */
 .dark {
