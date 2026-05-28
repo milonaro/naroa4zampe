@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { getComuneConfig } from '@/lib/tenant';
 
-// ─── Fallback Response ───────────────────────────────────────────────────────
+// ─── Falslback Response ───────────────────────────────────────────────────────
 
 const FALLBACK_RESPONSE =
   'Mi dispiace, al momento non riesco a elaborare la tua richiesta. Ti invito a riprovare più tardi oppure a utilizzare la sezione segnalazioni dell\'app per inviare una segnalazione diretta al tuo Comune.';
