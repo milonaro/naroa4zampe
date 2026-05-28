@@ -1,11 +1,16 @@
-import type { Metadata } from "next";
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy — Naro a4Zampe',
-  description: 'Informativa privacy conforme all\'art. 13 del GDPR (Regolamento UE 2016/679)'
-};
+import PolicyLayout from '@/components/PolicyLayout';
+import PolicySection from '@/components/PolicySection';
+import PolicyInfoBox from '@/components/PolicyInfoBox';
 
 export default function PrivacyPolicyPage() {
+  const today = new Date().toLocaleDateString('it-IT', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   const sections = [
     {
       title: "Titolare del Trattamento",
@@ -89,45 +94,18 @@ Sito web: www.garanteprivacy.it`
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <article className="prose prose-yellow max-w-none">
-        <h1 className="text-3xl font-bold text-foreground mb-6">
-          Privacy Policy
-        </h1>
-
-        <p className="text-lg text-muted-foreground mb-8">
-          Informativa ai sensi dell&apos;art. 13 del Regolamento UE 2016/679 (GDPR)
-        </p>
-
-        <div className="bg-card border rounded-lg p-4 mb-8">
-          <p className="text-sm text-muted-foreground">
-            <strong>Ultimo aggiornamento:</strong>{' '}
-            {new Date().toLocaleDateString('it-IT', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
+    <PolicyLayout
+      title="Privacy Policy"
+      subtitle="Informativa ai sensi dell'art. 13 del Regolamento UE 2016/679 (GDPR)"
+      lastUpdated={today}
+    >
+      {sections.map((section, index) => (
+        <PolicySection key={index} title={section.title}>
+          <p className="text-amber-900/80 whitespace-pre-line leading-relaxed">
+            {section.content}
           </p>
-        </div>
-
-        {sections.map((section, index) => (
-          <section key={index} className="mb-8">
-            <h2 className="text-2xl font-semibold text-foreground mb-4">
-              {section.title}
-            </h2>
-            <div className="text-muted-foreground whitespace-pre-line leading-relaxed">
-              {section.content}
-            </div>
-          </section>
-        ))}
-
-        <section className="mt-12 pt-6 border-t">
-          <p className="text-sm text-muted-foreground">
-            La presente informativa è redatta in conformità al GDPR e alle Linee Guida AgID 
-            per i servizi digitali della Pubblica Amministrazione.
-          </p>
-        </section>
-      </article>
-    </div>
+        </PolicySection>
+      ))}
+    </PolicyLayout>
   );
 }
