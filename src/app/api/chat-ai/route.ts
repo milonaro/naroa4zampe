@@ -1,11 +1,10 @@
 // API per l'assistente virtuale AI esperto di normative animali in Italia
 // POST: invia un messaggio e riceve una risposta dall'assistente
-// Utilizza l'SDK Anthropic ufficiale (FIX-03: sostituito z-ai-web-dev-sdk)
+// Utilizza l'API GROQ tramite fetch (no SDK required)
 // Il system prompt è generato dinamicamente con i dati del comune
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import Anthropic from '@anthropic-ai/sdk';
 import { db } from '@/lib/db';
 import { getComuneConfig } from '@/lib/tenant';
 
@@ -14,20 +13,17 @@ import { getComuneConfig } from '@/lib/tenant';
 const FALLBACK_RESPONSE =
   'Mi dispiace, al momento non riesco a elaborare la tua richiesta. Ti invito a riprovare più tardi oppure a utilizzare la sezione segnalazioni dell\'app per inviare una segnalazione diretta al tuo Comune.';
 
-// ─── Anthropic Client (singleton) ─────────────────────────────────────────────
+// ─── GROQ API Configuration ──────────────────────────────────────────────────
 
-let anthropicClient: Anthropic | null = null;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-function getAnthropicClient(): Anthropic | null {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.warn('ANTHROPIC_API_KEY non configurata. La chat AI non funzionerà.');
-    return null;
+function isGroqConfigured(): boolean {
+  if (!GROQ_API_KEY) {
+    console.warn('GROQ_API_KEY non configurata. La chat AI non funzionerà.');
+    return false;
   }
-  if (!anthropicClient) {
-    anthropicClient = new Anthropic({ apiKey });
-  }
-  return anthropicClient;
+  return true;
 }
 
 // ─── Request Validation Schema ───────────────────────────────────────────────
@@ -108,9 +104,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 2. Check Anthropic client availability
-  const client = getAnthropicClient();
-  if (!client) {
+  // 2. Check GROQ API availability
+  if (!isGroqConfigured()) {
     return NextResponse.json({
       message: 'L\'assistente AI non è al momento configurato. Contatta l\'amministratore del Comune per abilitare il servizio.',
     });
@@ -119,49 +114,57 @@ export async function POST(request: NextRequest) {
   // 3. Build system prompt and messages
   const systemPrompt = await buildSystemPrompt();
 
-  // Costruisci l'array di messaggi nel formato Anthropic
-  const messages: Anthropic.MessageParam[] = data.history.map((entry) => ({
-    role: entry.role,
-    content: entry.content,
-  }));
+  // Costruisci l'array di messaggi nel formato OpenAI (usato da GROQ)
+  const messages: Array<{ role: string; content: string }> = [
+    ...data.history,
+    { role: 'user', content: data.message },
+  ];
 
-  messages.push({ role: 'user', content: data.message });
-
-  // 4. Call Anthropic API
+  // 4. Call GROQ API via fetch
   try {
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      system: systemPrompt,
-      messages,
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'mixtral-8x7b-32768',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages,
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      }),
     });
 
-    // Extract the assistant's reply from the response
-    const assistantMessage = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
+    if (!response.ok) {
+      const errorData = await response.json();
+      const errorMsg = errorData.error?.message || `HTTP ${response.status}`;
+      
+      if (response.status === 401) {
+        return NextResponse.json({
+          message: 'L\'assistente AI non è configurato correttamente (credenziali GROQ non valide).',
+        });
+      }
+      
+      if (response.status === 429) {
+        return NextResponse.json({
+          message: 'L\'assistente è temporaneamente sovraccarico. Riprova tra qualche istante.',
+        });
+      }
 
-    return NextResponse.json({ message: assistantMessage || FALLBACK_RESPONSE });
+      console.error('Errore GROQ API:', errorMsg);
+      return NextResponse.json({ message: FALLBACK_RESPONSE });
+    }
+
+    const dati = await response.json();
+    const assistantMessage = dati.choices?.[0]?.message?.content || FALLBACK_RESPONSE;
+
+    return NextResponse.json({ message: assistantMessage });
   } catch (errore) {
     console.error('Errore nella generazione della risposta AI:', errore);
-
-    // Determina il tipo di errore per un messaggio appropriato
-    const errorMsg = errore instanceof Error ? errore.message : String(errore);
-
-    if (errorMsg.includes('api_key') || errorMsg.includes('authentication')) {
-      return NextResponse.json({
-        message: 'L\'assistente AI non è configurato correttamente. Contatta l\'amministratore.',
-      });
-    }
-
-    if (errorMsg.includes('rate_limit') || errorMsg.includes('overloaded')) {
-      return NextResponse.json({
-        message: 'L\'assistente è temporaneamente sovraccarico. Riprova tra qualche istante.',
-      });
-    }
-
-    // Errore generico: restituisci il fallback
     return NextResponse.json({ message: FALLBACK_RESPONSE });
   }
 }
