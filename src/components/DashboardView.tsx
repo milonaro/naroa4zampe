@@ -65,6 +65,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import {
   FileText,
@@ -104,6 +114,14 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useStore } from '@/lib/store';
 import { getEmailDomain, getCentroLabel, getFuoriZonaMessage, getPlaceholderIndirizzo, getTitoloNotifica } from '@/lib/tenant';
 import {
