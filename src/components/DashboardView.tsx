@@ -1,4 +1,4 @@
-// Vista Dashboard - Pannello Amministrativo multi-comune
+// Vista Dashboard - Pannello Amministrativo mzulti-comune
 // Design: Warm Sandy Yellow / Arenario Theme
 // Accessibile solo dopo autenticazione
 
