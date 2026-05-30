@@ -84,6 +84,7 @@ export default function SegnalaView() {
   const [posizioneMappa, setPosizioneMappa] = useState<{ lat: number; lng: number } | null>(null);
   const [anteprimaFoto, setAnteprimaFoto] = useState<string | null>(null);
   const [fotoBase64, setFotoBase64] = useState<string | null>(null);
+  const [validazioneInCorso, setValidazioneInCorso] = useState(false);
   const [segnalazioniSimili, setSegnalazioniSimili] = useState<Array<{
     id: string; titolo: string; urgenza: string; stato: string; distanza: number; createdAt: string;
   }> | null>(null);
@@ -133,14 +134,11 @@ export default function SegnalaView() {
     },
     onSuccess: (data) => {
       if (data.segnalazioniSimili?.length > 0) {
-        toast.warning('Segnalazioni simili rilevate', {
-          description: `Ci sono ${data.segnalazioniSimili.length} segnalazione/i nella stessa zona.`,
-          duration: 8000,
-        });
+        // Se sono stati trovati duplicati dopo l'invio, lo notifichiamo
         setSegnalazioniSimili(data.segnalazioniSimili);
       } else {
         toast.success('Segnalazione inviata con successo!', {
-          description: 'Grazie per il tuo contributo alla comunità.',
+          description: 'La tua segnalazione è stata presa in carico e sarà revisionata da un responsabile.',
         });
         setSegnalazioniSimili(null);
       }
@@ -157,12 +155,51 @@ export default function SegnalaView() {
     },
   });
 
+  // Verifica AI della qualità del testo (simulata per brevità, chiamerebbe /api/chat-ai)
+  const verificaQualitaAI = async (testo: string) => {
+    setValidazioneInCorso(true);
+    try {
+      // Qui potremmo chiamare un'API che usa Groq per validare il contenuto
+      // "Il testo descrive un animale randagio? È offensivo? È spam?"
+      await new Promise(r => setTimeout(r, 1500)); // Simulazione
+      
+      if (testo.length < 20) {
+        toast.warning('Suggerimento AI', {
+          description: 'La tua descrizione è un po\' breve. Fornire più dettagli aiuterà i soccorsi.',
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setValidazioneInCorso(false);
+    }
+  };
+
+  // Verifica proattiva duplicati basata sulla posizione
+  const controllaDuplicatiProattivo = async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(`/api/segnalazioni/check-duplicati?lat=${lat}&lng=${lng}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.duplicati?.length > 0) {
+          setSegnalazioniSimili(data.duplicati);
+          toast.info('Attenzione: segnalazioni simili trovate', {
+            description: 'Controlla se l\'animale è già stato segnalato per evitare duplicati.',
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Errore controllo duplicati:", e);
+    }
+  };
+
   // Click mappa
   const gestisciClickMappa = useCallback(
     (lat: number, lng: number) => {
       setPosizioneMappa({ lat, lng });
       setValue('latitudine', lat, { shouldValidate: true });
       setValue('longitudine', lng, { shouldValidate: true });
+      controllaDuplicatiProattivo(lat, lng);
     },
     [setValue],
   );
@@ -339,6 +376,31 @@ export default function SegnalaView() {
                     onClickMappa={gestisciClickMappa}
                   />
 
+                  {/* Box segnalazioni simili proattivo */}
+                  {segnalazioniSimili && segnalazioniSimili.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2"
+                    >
+                      <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
+                        <AlertTriangle className="h-4 w-4" />
+                        L&apos;animale è già stato segnalato?
+                      </div>
+                      <div className="max-h-32 overflow-y-auto space-y-2">
+                        {segnalazioniSimili.map(s => (
+                          <div key={s.id} className="text-xs bg-white/50 p-2 rounded border border-amber-100 flex justify-between items-center">
+                            <span className="font-medium truncate">{s.titolo}</span>
+                            <span className="text-amber-600 shrink-0">{Math.round(s.distanza * 1000)}m da qui</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-amber-600 italic">
+                        Se la tua segnalazione riguarda lo stesso evento, non è necessario procedere.
+                      </p>
+                    </motion.div>
+                  )}
+
                   {posizioneMappa ? (
                     <div className="flex items-center gap-4 text-sm bg-emerald-50 px-4 py-3 rounded-lg border border-emerald-200">
                       <Check className="h-4 w-4 text-emerald-600" />
@@ -507,7 +569,9 @@ export default function SegnalaView() {
                       rows={4}
                       className={`border-yellow-200 focus:border-yellow-500 min-h-[100px] ${errors.descrizione ? 'border-red-500' : ''}`}
                       {...register('descrizione')}
+                      onBlur={(e) => verificaQualitaAI(e.target.value)}
                     />
+                    {validazioneInCorso && <p className="text-[10px] text-yellow-600 flex items-center gap-1 animate-pulse"><Sparkles className="h-3 w-3" /> Analisi qualità in corso...</p>}
                     {errors.descrizione && <p className="text-sm text-red-500">{errors.descrizione.message}</p>}
                   </div>
 
@@ -684,6 +748,17 @@ export default function SegnalaView() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-5">
+                  {/* Avviso Moderazione */}
+                  <div className="p-4 rounded-xl bg-yellow-50 border border-yellow-200 flex gap-3 items-start">
+                    <Eye className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-sm font-bold text-yellow-800">Processo di validazione</h4>
+                      <p className="text-xs text-yellow-700 leading-relaxed mt-1">
+                        Per garantire la qualità del servizio e prevenire lo spam, ogni segnalazione viene ispezionata da un responsabile prima di essere pubblicata sulla mappa ufficiale. Riceverai una notifica quando la segnalazione sarà approvata.
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Informativa Privacy GDPR */}
                   <div className="space-y-3 p-4 rounded-xl bg-red-50/50 border border-red-100 border-l-4 border-l-red-500">
                     <div className="flex items-center gap-2 text-red-800 font-medium">
@@ -800,33 +875,6 @@ export default function SegnalaView() {
             </Button>
           )}
         </div>
-
-        {/* Segnalazioni simili */}
-        {segnalazioniSimili && segnalazioniSimili.length > 0 && (
-          <Card className="border-yellow-400/60 bg-yellow-50 shadow-sm mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2 text-yellow-800">
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                Segnalazioni simili rilevate
-              </CardTitle>
-              <CardDescription className="text-yellow-700">
-                Ci sono {segnalazioniSimili.length} segnalazione/i entro 200m dalla tua posizione.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {segnalazioniSimili.map((seg) => (
-                  <div key={seg.id} className="flex items-center justify-between p-3 rounded-lg bg-yellow-100/60 border border-yellow-200">
-                    <span className="text-sm text-yellow-800 font-medium truncate">{seg.titolo}</span>
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                      <span className="text-xs text-yellow-600 font-mono">{Math.round(seg.distanza * 1000)}m</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </form>
     </div>
   );

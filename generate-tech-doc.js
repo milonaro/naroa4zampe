@@ -316,7 +316,7 @@ function buildBodyContent() {
         ["Bun", "^1.3.4", "Runtime JavaScript ad alte prestazioni e package manager"],
         ["Tailwind CSS", "^4", "Framework CSS utility-first con sistema di design token oklch"],
         ["Prisma", "^6.11.1", "ORM type-safe con migrazioni automatiche e query builder"],
-        ["SQLite", "—", "Database embedded senza server, ideale per deployment leggeri"],
+        ["MySQL", "8.0+", "Database relazionale per persistenza scalabile e robusta"],
         ["shadcn/ui", "New York", "Libreria componenti Radix-based, accessibile e personalizzabile"],
         ["Zustand", "^5.0.6", "State management client-side leggero e performante"],
         ["TanStack React Query", "^5.82.0", "Gestione stato server con caching e polling automatico"],
@@ -363,7 +363,7 @@ function buildBodyContent() {
   content.push(heading("3. Database e ORM"));
   content.push(
     bodyPara(
-      "Il livello di persistenza dell\'applicazione è gestito da Prisma ORM con SQLite come database embedded. Questa combinazione offre un eccellente equilibrio tra semplicità di deployment e potenza espressiva delle query, risultando ideale per un\'applicazione destinata a comuni con infrastrutture IT limitate."
+      "Il livello di persistenza dell\'applicazione è gestito da Prisma ORM con MySQL come database relazionale. Questa scelta garantisce scalabilità, integrità referenziale robusta e supporto alla concorrenza elevata, requisiti fondamentali per la gestione di dati istituzionali."
     )
   );
 
@@ -397,10 +397,10 @@ function buildBodyContent() {
   );
   content.push(spacer(200));
 
-  content.push(heading("3.3 SQLite e Deployment", 2));
+  content.push(heading("3.3 MySQL e Deployment", 2));
   content.push(
     bodyPara(
-      "La scelta di SQLite come database è strategica per il contesto d\'uso: i comuni italiani, specialmente quelli di piccole e medie dimensioni, spesso non dispongono di infrastrutture per database server dedicati. SQLite opera come file embedded senza richiedere un processo server separato, semplificando drasticamente il deployment e la manutenzione. Il file del database è memorizzato in `/home/z/my-project/db/custom.db` e la connessione è configurata tramite la variabile d\'ambiente `DATABASE_URL` con il formato `file:/path/to/database`. Per deployment di maggiori dimensioni, Prisma supporta la migrazione verso PostgreSQL o MySQL senza modifiche al codice applicativo, ma solo allo schema di connessione."
+      "La scelta di MySQL come database risponde alla necessità di avere un sistema di gestione dati centralizzato e altamente performante. In configurazione Docker, viene utilizzato un servizio dedicato `db` basato sull'immagine ufficiale MySQL 8.0. La persistenza dei dati è garantita da volumi Docker esterni, assicurando che i dati dell'anagrafe canina e delle segnalazioni siano protetti anche durante gli aggiornamenti del container applicativo. La connessione è gestita tramite pool di connessioni ottimizzati da Prisma."
     )
   );
 

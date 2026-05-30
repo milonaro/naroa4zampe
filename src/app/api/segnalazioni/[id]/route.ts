@@ -1,162 +1,106 @@
-// API per la gestione di una singola segnalazione
-// GET: dettaglio segnalazione
-// PATCH: aggiornamento stato segnalazione
-// DELETE: eliminazione segnalazione
-
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
-// Schema di validazione per l'aggiornamento della segnalazione
-const aggiornaSegnalazioneSchema = z.object({
-  stato: z.enum(['ricevuta', 'in_lavorazione', 'risolta', 'archiviata']).optional(),
-  modificatoDa: z.string().optional(),
+// Schema per la validazione del cambio stato
+const patchSegnalazioneSchema = z.object({
+  stato: z.enum(['ricevuta', 'in_lavorazione', 'risolta', 'archiviata']),
+  modificatoDa: z.string().email(),
+  creaAnagrafica: z.boolean().optional(), // Se true, crea automaticamente il record Animale
 });
 
-// GET - Dettaglio di una singola segnalazione
+/**
+ * GET - Recupera il dettaglio completo di una segnalazione inclusi i log
+ */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
     const segnalazione = await db.segnalazione.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
-        notifiche: { orderBy: { createdAt: 'desc' } },
         logModifiche: { orderBy: { createdAt: 'desc' } },
+        animale: true,
       },
     });
 
     if (!segnalazione) {
-      return NextResponse.json(
-        { errore: 'Segnalazione non trovata' },
-        { status: 404 }
-      );
+      return NextResponse.json({ errore: 'Segnalazione non trovata' }, { status: 404 });
     }
 
     return NextResponse.json(segnalazione);
   } catch (errore) {
-    console.error('Errore nel recupero della segnalazione:', errore);
-    return NextResponse.json(
-      { errore: 'Errore nel recupero della segnalazione' },
-      { status: 500 }
-    );
+    return NextResponse.json({ errore: 'Errore interno' }, { status: 500 });
   }
 }
 
-// PATCH - Aggiornamento segnalazione
+/**
+ * PATCH - Aggiorna lo stato e gestisce la logica di approvazione
+ */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
     const corpo = await request.json();
-    const datiValidati = aggiornaSegnalazioneSchema.parse(corpo);
+    const { stato: nuovoStato, modificatoDa, creaAnagrafica } = patchSegnalazioneSchema.parse(corpo);
 
-    // Verifica che la segnalazione esista
     const segnalazioneEsistente = await db.segnalazione.findUnique({
-      where: { id },
+      where: { id: params.id },
+      include: { animale: true }
     });
 
     if (!segnalazioneEsistente) {
-      return NextResponse.json(
-        { errore: 'Segnalazione non trovata' },
-        { status: 404 }
-      );
+      return NextResponse.json({ errore: 'Segnalazione non trovata' }, { status: 404 });
     }
 
-    // Preparazione dati per l'aggiornamento
-    const datiAggiornamento: Record<string, unknown> = {};
+    const vecchioStato = segnalazioneEsistente.stato;
 
-    // Aggiornamento dello stato se fornito
-    if (datiValidati.stato !== undefined) {
-      datiAggiornamento.stato = datiValidati.stato;
-    }
+    const risultato = await db.$transaction(async (tx) => {
+      // 1. Aggiorna lo stato della segnalazione
+      const aggiornata = await tx.segnalazione.update({
+        where: { id: params.id },
+        data: { stato: nuovoStato },
+      });
 
-    // Aggiornamento della segnalazione
-    const segnalazione = await db.segnalazione.update({
-      where: { id },
-      data: datiAggiornamento,
+      // 2. Registra la modifica nei log (Audit Trail)
+      if (vecchioStato !== nuovoStato) {
+        await tx.logModifica.create({
+          data: {
+            segnalazioneId: params.id,
+            campoModificato: 'stato',
+            valorePrecedente: vecchioStato,
+            valoreNuovo: nuovoStato,
+            modificatoDa,
+          },
+        });
+      }
+
+      // 3. Creazione automatica Anagrafica (se richiesto e non esiste già)
+      if (nuovoStato === 'in_lavorazione' && creaAnagrafica && !segnalazioneEsistente.animale) {
+        await tx.animale.create({
+          data: {
+            segnalazioneOrigineId: params.id,
+            nome: `ID-${params.id.slice(-4)}`, // Nome temporaneo
+            specie: segnalazioneEsistente.tipoAnimale,
+            razza: segnalazioneEsistente.razza || 'Meticcio',
+            coloreMantello: segnalazioneEsistente.colore || 'N/D',
+            taglia: segnalazioneEsistente.taglia || 'media',
+            sesso: 'M', // Default da editare in seguito
+            statoGiuridico: 'territorio',
+          }
+        });
+      }
+
+      return aggiornata;
     });
 
-    // Creazione del log di modifica se lo stato è cambiato
-    if (datiValidati.stato !== undefined && datiValidati.stato !== segnalazioneEsistente.stato) {
-      await db.logModifica.create({
-        data: {
-          segnalazioneId: id,
-          campoModificato: 'stato',
-          valorePrecedente: segnalazioneEsistente.stato,
-          valoreNuovo: datiValidati.stato,
-          modificatoDa: corpo.modificatoDa || 'sconosciuto',
-        },
-      });
-    }
-
-    // Creazione notifica per il cambio di stato
-    if (datiValidati.stato !== undefined) {
-      const messaggiStato: Record<string, string> = {
-        ricevuta: 'La segnalazione è stata registrata',
-        in_lavorazione: 'La segnalazione è in fase di lavorazione',
-        risolta: 'La segnalazione è stata risolta',
-        archiviata: 'La segnalazione è stata archiviata',
-      };
-
-      await db.notifica.create({
-        data: {
-          messaggio: `${messaggiStato[datiValidati.stato]}: ${segnalazioneEsistente.titolo}`,
-          tipo: 'aggiornamento_stato',
-          segnalazioneId: id,
-        },
-      });
-    }
-
-    return NextResponse.json(segnalazione);
+    return NextResponse.json(risultato);
   } catch (errore) {
     if (errore instanceof z.ZodError) {
-      return NextResponse.json(
-        { errore: 'Dati non validi', dettagli: errore.issues },
-        { status: 400 }
-      );
+      return NextResponse.json({ errore: 'Dati non validi', dettagli: errore.issues }, { status: 400 });
     }
-    console.error("Errore nell'aggiornamento della segnalazione:", errore);
-    return NextResponse.json(
-      { errore: "Errore nell'aggiornamento della segnalazione" },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE - Eliminazione segnalazione
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    // Eliminazione log delle modifiche associati
-    await db.logModifica.deleteMany({
-      where: { segnalazioneId: id },
-    });
-
-    // Eliminazione notifiche associate
-    await db.notifica.deleteMany({
-      where: { segnalazioneId: id },
-    });
-
-    // Eliminazione segnalazione
-    await db.segnalazione.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ messaggio: 'Segnalazione eliminata con successo' });
-  } catch (errore) {
-    console.error("Errore nell'eliminazione della segnalazione:", errore);
-    return NextResponse.json(
-      { errore: "Errore nell'eliminazione della segnalazione" },
-      { status: 500 }
-    );
+    return NextResponse.json({ errore: 'Errore durante l\'aggiornamento' }, { status: 500 });
   }
 }

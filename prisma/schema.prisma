@@ -92,8 +92,31 @@ model Segnalazione {
   utente      Utente?  @relation(fields: [utenteId], references: [id])
   notifiche   Notifica[]
   logModifiche LogModifica[]
+  animale     Animale?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Modello per l'Anagrafica Canina Nazionale
+model Animale {
+  id                   String   @id @default(cuid())
+  codiceMicrochip      String?  @unique
+  nome                 String
+  specie               String   @default("cane") // "cane", "gatto", "altro"
+  razza                String?
+  sesso                String   // "M", "F"
+  coloreMantello       String
+  taglia               String
+  dataNascitaPresunta  DateTime?
+  sterilizzato         Boolean  @default(false)
+  dataSterilizzazione  DateTime?
+  segniParticolari     String?
+  statoGiuridico       String   @default("territorio") // "territorio", "canile_sanitario", "canile_rifugio", "adottato"
+  
+  segnalazioneOrigineId String? @unique
+  segnalazioneOrigine   Segnalazione? @relation(fields: [segnalazioneOrigineId], references: [id])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 // Notifica per le autorità comunali

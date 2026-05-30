@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 import { getComuneConfig } from '@/lib/tenant';
+import { inviaEmailEmergenza } from '@/lib/mail';
 import { segnalazioniLimiter, getClientIp, checkRateLimit } from '@/lib/rate-limit';
 
 // Formula di Haversine per il calcolo della distanza tra due punti geografici
@@ -148,6 +149,11 @@ export async function POST(request: NextRequest) {
         fuoriZona,
       },
     });
+
+    // Se l'urgenza è critica, invia immediatamente una notifica email all'operatore
+    if (datiValidati.urgenza === 'critica') {
+      await inviaEmailEmergenza(config, segnalazione);
+    }
 
     // Creazione notifica automatica
     const tipoNotifica = datiValidati.urgenza === 'critica' || datiValidati.urgenza === 'alta'

@@ -5,26 +5,18 @@ su un server Linux.
 
 ## Requisiti
 
-- Server Linux (Ubuntu 22.04 o Debian 12 consigliato)
-- Docker e Docker Compose installati
-- Porta 80 e 443 aperte sul firewall
-- Un dominio puntato al server (opzionale, per HTTPS automatico)
+- Hosting: Vercel (Frontend & API Serverless)
+- Database: MySQL su Aruba (con accesso esterno abilitato)
+- Node.js / Bun installato localmente per le migrazioni
+- Account Resend.com per l'invio email
 
 ## Procedura di Installazione
 
-### 1. Prepara il server
+### 1. Configurazione Database (Aruba)
 
-```bash
-# Installa Docker (Ubuntu)
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-```
+1. Accedi al pannello MySQL di Aruba.
+2. Assicurati che l'**Accesso Esterno** sia abilitato.
+3. Prendi nota di: Host, Username, Password e Nome Database.
 
 ### 2. Clona e configura
 
@@ -43,7 +35,7 @@ nano .env
 Compila `.env` con i valori reali:
 
 ```env
-DATABASE_URL=file:/app/db/a4zampe.db
+DATABASE_URL=mysql://UTENTE_ARUBA:PASSWORD_ARUBA@HOST_ARUBA:3306/NOME_DB_ARUBA
 RESEND_API_KEY=re_xxxxxxxxxxxx        # Ottieni da https://resend.com
 EMAIL_FROM=noreply@comune-naro.it     # Dominio verificato su Resend
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx # Ottieni da https://console.anthropic.com

@@ -72,7 +72,14 @@ import {
   CheckCircle,
   Archive,
   AlertTriangle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
   Bell,
+  ShieldCheck,
   BellOff,
   Dog,
   TrendingUp,
@@ -92,6 +99,8 @@ import {
   Users,
   Mail,
   Phone,
+  Fingerprint,
+  Stethoscope,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
@@ -166,6 +175,23 @@ interface LogModifica {
   createdAt: string;
 }
 
+interface AnimaleAnagrafica {
+  id: string;
+  codiceMicrochip?: string;
+  nome: string;
+  specie: 'cane' | 'gatto' | 'altro';
+  razza?: string;
+  sesso: 'M' | 'F';
+  coloreMantello: string;
+  taglia: string;
+  dataNascitaPresunta?: string;
+  sterilizzato: boolean;
+  dataSterilizzazione?: string;
+  segniParticolari?: string;
+  statoGiuridico: 'territorio' | 'canile_sanitario' | 'canile_rifugio' | 'adottato' | 'deceduto';
+  segnalazioneOrigineId?: string;
+}
+
 interface AreaOperativa {
   centro: { latitudine: number; longitudine: number };
   raggioKm: number;
@@ -203,6 +229,7 @@ export default function DashboardView() {
   const [utentiSearch, setUtentiSearch] = useState('');
   const [debouncedUtentiSearch, setDebouncedUtentiSearch] = useState('');
   const [utenteEspanso, setUtenteEspanso] = useState<string | null>(null);
+  const [animaleSelezionato, setAnimaleSelezionato] = useState<AnimaleAnagrafica | null>(null);
   const [fuoriZonaDialog, setFuoriZonaDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const [permessoNotifiche, setPermessoNotifiche] = useState<NotificationPermission | 'default'>(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -483,19 +510,19 @@ export default function DashboardView() {
 
   // ─── Render ─────────────────────────────────────────────────────────────
   return (
-    <div className="container mx-auto px-4 space-y-6 pb-8 bg-gradient-to-b from-yellow-50/50 to-white p-6 min-h-screen">
+    <div className="container mx-auto px-4 space-y-0 pb-8 py-6">
       {/* ─── Intestazione ─────────────────────────────────────────────── */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-gradient-to-r from-yellow-50 to-yellow-50 -mx-6 -mt-2 px-6 py-5 border-b border-yellow-200/50 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-              <Activity className="h-5 w-5 text-yellow-600" />
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-yellow-600 text-white shadow-md shadow-yellow-600/30 shrink-0">
+              <Activity className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-yellow-800 tracking-tight flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-yellow-800 tracking-tight">
                 Dashboard Operativa
               </h2>
-              <p className="text-yellow-600 text-xs mt-0.5">
+              <p className="text-yellow-600 text-sm mt-0.5 font-medium">
                 {configComune.nomeApp} — {getCentroLabel(configComune)}
               </p>
             </div>
@@ -520,7 +547,7 @@ export default function DashboardView() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* ─── Schede Statistiche ────────────────────────────────────────── */}
       <motion.div
@@ -557,14 +584,33 @@ export default function DashboardView() {
       </motion.div>
 
       {/* ─── Tab principali ───────────────────────────────────────────── */}
-      <Tabs value={tabAttiva} onValueChange={setTabAttiva}>
-        <TabsList className="bg-yellow-100/80 p-1 border border-yellow-200/60">
+      <Tabs value={tabAttiva} onValueChange={setTabAttiva} className="mt-6">
+        <TabsList className="bg-yellow-100/80 p-1 border border-yellow-200/60 w-full justify-start overflow-x-auto h-auto">
           <TabsTrigger
             value="panoramica"
             className="data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-yellow-700 text-xs"
           >
             <Activity className="h-3.5 w-3.5 mr-1.5" />
             Panoramica
+          </TabsTrigger>
+          <TabsTrigger
+            value="moderazione"
+            className="data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-orange-700 text-xs relative"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+            Moderazione
+            {statistiche?.perStato?.ricevuta > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-4 min-w-[16px] p-0.5 flex items-center justify-center bg-red-500 text-white text-[9px] border-0 animate-bounce">
+                {statistiche.perStato.ricevuta}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger
+            value="anagrafica"
+            className="data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-sm text-yellow-700 text-xs"
+          >
+            <Fingerprint className="h-3.5 w-3.5 mr-1.5" />
+            Anagrafica Nazionale
           </TabsTrigger>
           <TabsTrigger
             value="segnalazioni"
@@ -769,6 +815,252 @@ export default function DashboardView() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ═══════════ TAB MODERAZIONE ═══════════ */}
+        <TabsContent value="moderazione">
+          <div className="grid grid-cols-1 gap-4">
+            <Card className="border-orange-200 shadow-sm bg-orange-50/20">
+              <CardHeader className="pb-4 border-b border-orange-100/50">
+                <CardTitle className="text-orange-800 text-base flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-orange-600" />
+                  Coda di Validazione Segnalazioni
+                </CardTitle>
+                <CardDescription className="text-orange-600 text-xs">
+                  Ispeziona le segnalazioni prima della pubblicazione. Totale in attesa: <strong>{segnalazioni.filter(s => s.stato === 'ricevuta').length}</strong>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                {segnalazioni.filter(s => s.stato === 'ricevuta').length === 0 ? (
+                  <div className="text-center py-10 text-orange-300">
+                    <CheckCircle className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                    <p className="text-sm">Nessuna segnalazione pendente. Ottimo lavoro!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {segnalazioni.filter(s => s.stato === 'ricevuta').map((seg) => (
+                      <motion.div 
+                        key={seg.id}
+                        layout
+                        className="bg-white border border-orange-100 rounded-xl p-4 flex flex-col md:flex-row items-center gap-4 hover:shadow-lg transition-all"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className={`${COLORI_URGENZA_BADGE[seg.urgenza]} text-[9px]`}>
+                              {ETICHETTE_URGENZA[seg.urgenza]}
+                            </Badge>
+                            <h4 className="font-bold text-gray-800 truncate">{seg.titolo}</h4>
+                          </div>
+                          <p className="text-xs text-gray-500 line-clamp-1 italic mb-2">&quot;{seg.descrizione}&quot;</p>
+                          <div className="flex gap-4 text-[10px] text-gray-400">
+                            <span className="flex items-center gap-1"><User className="h-3 w-3" /> {seg.nomeSegnalatore} {seg.cognomeSegnalatore}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(seg.createdAt).toLocaleString('it-IT')}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-red-600 border-red-100 hover:bg-red-50 text-xs"
+                            onClick={() => handleStatusChange(seg, 'archiviata')}
+                          >
+                            Scarta Spam
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                            onClick={() => handleStatusChange(seg, 'in_lavorazione')}
+                          >
+                            Approva e Pubblica
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* ═══════════ TAB ANAGRAFICA ═══════════ */}
+        <TabsContent value="anagrafica">
+          <Card className="border-yellow-200/60 shadow-sm overflow-hidden">
+            <CardHeader className="bg-yellow-50/50 border-b border-yellow-100">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-yellow-800 text-base flex items-center gap-2">
+                    <Fingerprint className="h-5 w-5" />
+                    Registro Animali d&apos;Affezione
+                  </CardTitle>
+                  <CardDescription className="text-yellow-600 text-xs">
+                    Gestione dei microchip e delle schede tecniche secondo normativa nazionale.
+                  </CardDescription>
+                </div>
+                <Button size="sm" className="bg-yellow-600 text-white text-xs">
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Nuovo Inserimento
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-yellow-50/30">
+                  <TableRow className="border-yellow-100">
+                    <TableHead className="text-xs text-yellow-700">Codice Microchip</TableHead>
+                    <TableHead className="text-xs text-yellow-700">Nome/ID</TableHead>
+                    <TableHead className="text-xs text-yellow-700">Specie/Razza</TableHead>
+                    <TableHead className="text-xs text-yellow-700">Stato Giuridico</TableHead>
+                    <TableHead className="text-xs text-yellow-700">Salute</TableHead>
+                    <TableHead className="text-xs text-yellow-700 text-right">Azioni</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {/* Esempio statico di riga anagrafica */}
+                  <TableRow className="border-yellow-50 hover:bg-yellow-50/30 transition-colors">
+                    <TableCell className="font-mono text-[11px] font-bold text-yellow-900">380260001234567</TableCell>
+                    <TableCell className="text-xs font-medium">Lucky</TableCell>
+                    <TableCell className="text-[10px] text-gray-500">Cane • Meticcio (M)</TableCell>
+                    <TableCell>
+                      <Badge className="bg-emerald-100 text-emerald-800 border-0 text-[9px] uppercase tracking-tighter">Territorio</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-[10px] text-emerald-600">
+                        <Stethoscope className="h-3 w-3" /> Sterilizzato
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 text-yellow-600"
+                        onClick={() => setAnimaleSelezionato({
+                          id: '1',
+                          nome: 'Lucky',
+                          codiceMicrochip: '380260001234567',
+                          specie: 'cane',
+                          razza: 'Meticcio',
+                          sesso: 'M',
+                          coloreMantello: 'Marrone/Bianco',
+                          taglia: 'media',
+                          sterilizzato: true,
+                          statoGiuridico: 'territorio'
+                        })}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+              <div className="p-4 bg-yellow-50/20 text-center">
+                <p className="text-[10px] text-yellow-500 italic">
+                  Integrazione con database regionale BDN (Banca Dati Nazionale) tramite protocollo REST API (Placeholder)
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+      {/* ─── Modale Dettaglio Animale Anagrafica ─── */}
+      <Dialog open={!!animaleSelezionato} onOpenChange={() => setAnimaleSelezionato(null)}>
+        <DialogContent className="max-w-2xl bg-white border-yellow-200">
+          <DialogHeader>
+            <DialogTitle className="text-yellow-800 flex items-center gap-2">
+              <Fingerprint className="h-5 w-5 text-yellow-600" />
+              Scheda Tecnica Animale: {animaleSelezionato?.nome}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Conforme ai requisiti della Banca Dati Nazionale degli Animali d&apos;Affezione.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {animaleSelezionato && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-4">
+                <div className="bg-yellow-50/50 p-4 rounded-xl border border-yellow-100">
+                  <Label className="text-[10px] uppercase text-yellow-600 font-bold">Identificazione</Label>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">Codice Microchip:</span>
+                      <span className="font-mono text-sm font-bold text-yellow-900 tracking-wider">
+                        {animaleSelezionato.codiceMicrochip || 'NON RILEVATO'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">Stato Giuridico:</span>
+                      <Badge className="bg-yellow-600 text-white border-0 text-[9px] uppercase">
+                        {animaleSelezionato.statoGiuridico.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-yellow-700">Caratteristiche Fisiche</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 bg-gray-50 rounded border border-gray-100">
+                      <p className="text-[9px] text-gray-400 uppercase">Razza</p>
+                      <p className="text-xs font-medium">{animaleSelezionato.razza || 'Meticcio'}</p>
+                    </div>
+                    <div className="p-2 bg-gray-50 rounded border border-gray-100">
+                      <p className="text-[9px] text-gray-400 uppercase">Sesso</p>
+                      <p className="text-xs font-medium">{animaleSelezionato.sesso === 'M' ? 'Maschio' : 'Femmina'}</p>
+                    </div>
+                    <div className="p-2 bg-gray-50 rounded border border-gray-100">
+                      <p className="text-[9px] text-gray-400 uppercase">Taglia</p>
+                      <p className="text-xs font-medium capitalize">{animaleSelezionato.taglia}</p>
+                    </div>
+                    <div className="p-2 bg-gray-50 rounded border border-gray-100">
+                      <p className="text-[9px] text-gray-400 uppercase">Mantello</p>
+                      <p className="text-xs font-medium">{animaleSelezionato.coloreMantello}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                  <Label className="text-[10px] uppercase text-emerald-600 font-bold">Stato Sanitario</Label>
+                  <div className="mt-3 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center ${animaleSelezionato.sterilizzato ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                        <Stethoscope className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-emerald-800">Sterilizzazione</p>
+                        <p className="text-[10px] text-emerald-600">
+                          {animaleSelezionato.sterilizzato ? 'Effettuata' : 'Da programmare'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full text-[10px] h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                      Aggiorna Parametri Veterinari
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-yellow-700">Segni Particolari / Note</Label>
+                  <p className="text-xs text-gray-600 italic bg-yellow-50/30 p-3 rounded-lg border border-yellow-100/50">
+                    {animaleSelezionato.segniParticolari || 'Nessun segno particolare registrato.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="border-t border-yellow-100 pt-4">
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setAnimaleSelezionato(null)}>
+              Chiudi
+            </Button>
+            <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700 text-white text-xs">
+              Modifica Scheda
+            </Button>
+            <Button size="sm" variant="outline" className="text-xs border-emerald-200 text-emerald-700">
+              Stampa Modello regionale
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
         {/* ═══════════ TAB SEGNALAZIONI ═══════════ */}
         <TabsContent value="segnalazioni">
