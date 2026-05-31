@@ -1,4 +1,4 @@
-// Vista Dashboard - Pannello Amministrativo mzulti-comune
+// Vista Dashboard - Pannello Amministrativo multi-comune
 // Design: Warm Sandy Yellow / Arenario Theme
 // Accessibile solo dopo autenticazione
 
@@ -74,7 +74,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from '@/components/ui/tooltip';
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import {
   FileText,
@@ -82,12 +82,6 @@ import {
   CheckCircle,
   Archive,
   AlertTriangle,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
   Bell,
   ShieldCheck,
   BellOff,
