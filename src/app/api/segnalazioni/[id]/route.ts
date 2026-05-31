@@ -14,11 +14,12 @@ const patchSegnalazioneSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const segnalazione = await db.segnalazione.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         logModifiche: { orderBy: { createdAt: 'desc' } },
         animale: true,
@@ -40,14 +41,15 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const corpo = await request.json();
     const { stato: nuovoStato, modificatoDa, creaAnagrafica } = patchSegnalazioneSchema.parse(corpo);
 
     const segnalazioneEsistente = await db.segnalazione.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { animale: true }
     });
 
@@ -60,7 +62,7 @@ export async function PATCH(
     const risultato = await db.$transaction(async (tx) => {
       // 1. Aggiorna lo stato della segnalazione
       const aggiornata = await tx.segnalazione.update({
-        where: { id: params.id },
+        where: { id },
         data: { stato: nuovoStato },
       });
 
@@ -68,7 +70,7 @@ export async function PATCH(
       if (vecchioStato !== nuovoStato) {
         await tx.logModifica.create({
           data: {
-            segnalazioneId: params.id,
+            segnalazioneId: id,
             campoModificato: 'stato',
             valorePrecedente: vecchioStato,
             valoreNuovo: nuovoStato,
@@ -81,8 +83,8 @@ export async function PATCH(
       if (nuovoStato === 'in_lavorazione' && creaAnagrafica && !segnalazioneEsistente.animale) {
         await tx.animale.create({
           data: {
-            segnalazioneOrigineId: params.id,
-            nome: `ID-${params.id.slice(-4)}`, // Nome temporaneo
+            segnalazioneOrigineId: id,
+            nome: `ID-${id.slice(-4)}`, // Nome temporaneo
             specie: segnalazioneEsistente.tipoAnimale,
             razza: segnalazioneEsistente.razza || 'Meticcio',
             coloreMantello: segnalazioneEsistente.colore || 'N/D',
