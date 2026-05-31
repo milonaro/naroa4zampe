@@ -72,12 +72,6 @@ import {
   CheckCircle,
   Archive,
   AlertTriangle,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
   Bell,
   ShieldCheck,
   BellOff,
@@ -104,6 +98,14 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useStore } from '@/lib/store';
 import { getEmailDomain, getCentroLabel, getFuoriZonaMessage, getPlaceholderIndirizzo, getTitoloNotifica } from '@/lib/tenant';
 import {
